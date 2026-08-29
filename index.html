@@ -9,32 +9,33 @@
 <meta name="apple-mobile-web-app-title" content="ONE">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
-<link rel="stylesheet" href="styles.css">
+<link rel="stylesheet" href="styles.css?v=5">
 <title>ONE</title>
 </head>
 <body>
+<div id="toast" class="toast hidden" role="status"></div>
+
 <div class="app-shell">
 <header class="topbar">
-<button class="icon-btn" id="menuBtn">☰</button>
-<div class="brand">O N E</div>
-<button class="icon-btn" id="profileBtn">◯</button>
+<button class="icon-btn" id="menuBtn" aria-label="Apri menu">☰</button>
+<div class="brand">O N E <span class="beta">BETA</span></div>
+<button class="icon-btn" id="profileBtn" aria-label="Profilo">◯</button>
 </header>
 
-<main>
+<main id="homeView" class="view active-view">
 <section class="hero-copy">
 <h1>Ciao Andrea,</h1>
 <p>Mostrami, chiedi, delega.<br>Io mi occupo del resto.</p>
+<div id="aiStatus" class="status-pill"><span></span> ONE pronto</div>
 </section>
 
 <section class="orb-section">
-<button id="orbButton" class="orb-button">
+<button id="orbButton" class="orb-button" aria-label="Attiva ONE">
 <div id="orb" class="orb idle">
 <div class="orb-ring"></div>
 <div class="orb-core">
 <div id="particles" class="particles hidden"></div>
-<div id="wave" class="wave hidden">
-<span></span><span></span><span></span><span></span><span></span><span></span><span></span>
-</div>
+<div id="wave" class="wave hidden"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
 <div id="orbLabel" class="orb-label">ONE</div>
 </div>
 </div>
@@ -42,11 +43,12 @@
 <div id="orbSubtitle" class="orb-subtitle">Tocca per iniziare</div>
 </section>
 
-<section class="askbar">
+<form id="askForm" class="askbar">
 <span class="spark">✦</span>
 <input id="promptInput" type="text" placeholder="Chiedi qualsiasi cosa…" enterkeyhint="send" autocomplete="off">
-<button id="micButton" class="mic-btn">◉</button>
-</section>
+<button id="sendBtn" class="send-btn hidden" type="submit" aria-label="Invia">↑</button>
+<button id="micButton" class="mic-btn" type="button" aria-label="Microfono">◉</button>
+</form>
 
 <section class="quick-actions">
 <button class="quick" id="cameraBtn"><span>⌁</span><small>Mostra</small></button>
@@ -62,11 +64,8 @@
 <section id="captureCard" class="capture-card hidden">
 <img id="captureImage" class="capture-image hidden" alt="Anteprima">
 <div id="captureIcon" class="capture-file-icon hidden">▤</div>
-<div class="capture-copy">
-<strong id="captureTitle">Acquisito</strong>
-<span id="captureMeta"></span>
-</div>
-<button id="clearCapture">×</button>
+<div class="capture-copy"><strong id="captureTitle">Acquisito</strong><span id="captureMeta"></span></div>
+<button id="clearCapture" aria-label="Rimuovi">×</button>
 </section>
 
 <section id="demoResult" class="demo-result hidden"></section>
@@ -76,30 +75,112 @@
 <button id="seeAll">Vedi tutte</button>
 </section>
 
-<section class="card recent-card">
-<div class="recent-row"><div class="recent-icon">▤</div><div class="recent-copy"><strong>Fattura ACME.pdf</strong><span>Salvata e promemoria creato</span></div><time>10:34</time></div>
-<div class="recent-row"><div class="recent-icon">⌂</div><div class="recent-copy"><strong>Ristorante da Ibiza</strong><span>Aggiunto ai preferiti</span></div><time>Ieri</time></div>
-<div class="recent-row"><div class="recent-icon">✈</div><div class="recent-copy"><strong>Volo per Milano</strong><span>Monitoraggio attivo</span></div><time>Ieri</time></div>
-</section>
+<section id="recentCard" class="card recent-card"></section>
 
-<section class="card memory-card">
+<button id="memoryCard" class="card memory-card">
 <div class="memory-orb"><div></div></div>
 <div class="memory-copy"><strong>La tua memoria privata</strong><span>ONE ricorda ciò che conta, così non devi farlo tu.</span></div>
 <span class="chev">›</span>
-</section>
+</button>
 
 <div class="bottom-space"></div>
 </main>
 
+<section id="activitiesView" class="view">
+<div class="view-header"><button class="back-btn" data-home>‹</button><div><h1>Attività</h1><p>Ciò che ONE ha gestito</p></div></div>
+<div id="allActivities" class="stack"></div>
+<div class="bottom-space"></div>
+</section>
+
+<section id="recallView" class="view">
+<div class="view-header"><button class="back-btn" data-home>‹</button><div><h1>Recall</h1><p>La tua memoria privata</p></div></div>
+<div class="recall-hero">
+<div class="recall-orb"><span></span></div>
+<h2>Ricorda senza organizzare</h2>
+<p>ONE conserva localmente la cronologia essenziale delle tue interazioni. La memoria cloud arriverà in una versione successiva.</p>
+</div>
+<div id="recallList" class="stack"></div>
+<div class="bottom-space"></div>
+</section>
+
+<section id="searchView" class="view">
+<div class="view-header"><button class="back-btn" data-home>‹</button><div><h1>Cerca</h1><p>Trova ciò che hai fatto con ONE</p></div></div>
+<div class="search-large"><span>⌕</span><input id="searchInput" placeholder="Cerca attività, documenti, richieste…"></div>
+<div id="searchResults" class="stack"></div>
+<div class="bottom-space"></div>
+</section>
+
+<section id="profileView" class="view">
+<div class="view-header"><button class="back-btn" data-home>‹</button><div><h1>Profilo</h1><p>ONE Beta</p></div></div>
+<div class="profile-hero card">
+<div class="avatar">A</div>
+<div><strong>Andrea</strong><span>Account locale · Beta</span></div>
+</div>
+<div class="settings-group">
+<button data-open="settings"><span>⚙</span><div><strong>Impostazioni</strong><small>Preferenze di ONE</small></div><b>›</b></button>
+<button data-open="privacy"><span>◈</span><div><strong>Privacy</strong><small>Come vengono gestiti i dati</small></div><b>›</b></button>
+<button data-open="terms"><span>§</span><div><strong>Termini di utilizzo</strong><small>Versione 29/08/2026</small></div><b>›</b></button>
+<button data-open="about"><span>ⓘ</span><div><strong>Informazioni</strong><small>ONE 0.5 Beta</small></div><b>›</b></button>
+</div>
+<div class="bottom-space"></div>
+</section>
+
 <nav class="bottom-nav">
-<button class="active">⌂</button>
-<button>▱</button>
-<button id="navOrb" class="nav-orb"><span></span></button>
-<button>⌕</button>
-<button>◯</button>
+<button id="navHome" class="active" aria-label="Home">⌂</button>
+<button id="navActivity" aria-label="Attività">▱</button>
+<button id="navOrb" class="nav-orb" aria-label="Parla con ONE"><span></span></button>
+<button id="navSearch" aria-label="Cerca">⌕</button>
+<button id="navProfile" aria-label="Profilo">◯</button>
 </nav>
 </div>
 
-<script src="app.js?v=4"></script>
+<div id="scrim" class="scrim hidden"></div>
+
+<aside id="drawer" class="drawer" aria-hidden="true">
+<div class="drawer-head"><div><div class="drawer-brand">O N E</div><small>Universal Action AI</small></div><button id="drawerClose">×</button></div>
+<div class="drawer-section">
+<span class="drawer-label">ESPLORA</span>
+<button data-nav="home"><i>⌂</i><span>Home</span></button>
+<button data-nav="activities"><i>▱</i><span>Attività</span></button>
+<button data-nav="recall"><i>◌</i><span>Recall</span><em>BETA</em></button>
+<button data-nav="search"><i>⌕</i><span>Cerca</span></button>
+</div>
+<div class="drawer-section">
+<span class="drawer-label">ONE</span>
+<button data-open="actions"><i>⚡</i><span>Centro azioni</span></button>
+<button data-open="integrations"><i>⌘</i><span>Integrazioni</span></button>
+<button data-open="settings"><i>⚙</i><span>Impostazioni</span></button>
+</div>
+<div class="drawer-section">
+<span class="drawer-label">LEGALE</span>
+<button data-open="privacy"><i>◈</i><span>Privacy</span></button>
+<button data-open="terms"><i>§</i><span>Termini di utilizzo</span></button>
+</div>
+<div class="drawer-foot">ONE 0.5 Beta · 2026</div>
+</aside>
+
+<div id="sheet" class="sheet" aria-hidden="true">
+<div class="sheet-handle"></div>
+<div class="sheet-head"><div><h2 id="sheetTitle">ONE</h2><p id="sheetSubtitle"></p></div><button id="sheetClose">×</button></div>
+<div id="sheetBody" class="sheet-body"></div>
+</div>
+
+<div id="legalGate" class="legal-gate hidden">
+<div class="legal-card">
+<div class="legal-logo">O N E</div>
+<h1>Prima di iniziare</h1>
+<p>ONE è ancora in versione Beta. Per continuare devi leggere e accettare i Termini di utilizzo e l'informativa privacy preliminare.</p>
+<div class="legal-summary">
+<div><span>◈</span><p><strong>AI sperimentale</strong><small>Le risposte possono essere inesatte e devono essere verificate.</small></p></div>
+<div><span>↗</span><p><strong>Elaborazione esterna</strong><small>Quando usi l'AI, il contenuto può essere inviato ai fornitori necessari al servizio.</small></p></div>
+<div><span>⌁</span><p><strong>Sei tu a decidere</strong><small>ONE non esegue ancora automaticamente azioni irreversibili.</small></p></div>
+</div>
+<label class="consent-check"><input id="legalCheck" type="checkbox"><span>Ho letto e accetto i <button type="button" id="gateTerms">Termini di utilizzo</button> e ho preso visione della <button type="button" id="gatePrivacy">Privacy</button>.</span></label>
+<button id="acceptLegal" class="primary-btn" disabled>Continua con ONE</button>
+<small class="legal-version">Termini v1.0 · 29 agosto 2026</small>
+</div>
+</div>
+
+<script src="app.js?v=5"></script>
 </body>
 </html>

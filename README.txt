@@ -1,18 +1,41 @@
-ONE AI 0.4
+ONE 0.5 FULL — 29/08/2026
 
-Sostituisci nel repository GitHub:
-- app.js
+Sostituisci nel repository:
 - index.html
+- styles.css
+- app.js
+- sw.js
 
-Poi attendi il deploy di GitHub Pages e apri:
-https://andrea70031.github.io/one-app/?v=4
+Poi apri:
+https://andrea70031.github.io/one-app/?v=5
 
-Funzioni AI attive:
-- testo
-- fotocamera
-- immagini dalla libreria
+NOVITÀ
+- Menu laterale funzionante
+- Profilo funzionante
+- Bottom navigation funzionante
+- Attività complete
+- Recall locale
+- Ricerca attività
+- Centro azioni
+- Integrazioni placeholder
+- Impostazioni
+- Cancellazione memoria locale
+- Feedback aptico quando supportato
+- Error handling AI più pulito
+- Termini di utilizzo
+- Privacy preliminare
+- Accettazione legale al primo avvio
+- Storico locale
+- Cache aggiornata v5
 
-Non ancora collegate in questa build:
-- PDF nativi
-- trascrizione voce
-- esecuzione reale delle azioni
+NOTA LEGALE
+Termini e privacy sono bozze operative per il prototipo.
+Prima di una distribuzione commerciale vanno completati con:
+- ragione sociale/titolare
+- contatti
+- basi giuridiche GDPR
+- tempi di conservazione
+- eventuali responsabili/sub-responsabili
+- legge applicabile e foro
+- policy App Store definitiva
+e fatti verificare da un professionista.
