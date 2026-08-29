@@ -14,32 +14,92 @@
 </head>
 <body>
 <div class="app-shell">
-<header class="topbar"><button class="icon-btn">☰</button><div class="brand">O N E</div><button class="icon-btn">◯</button></header>
+<header class="topbar">
+<button class="icon-btn" id="menuBtn">☰</button>
+<div class="brand">O N E</div>
+<button class="icon-btn" id="profileBtn">◯</button>
+</header>
+
 <main>
-<section class="hero-copy"><h1>Ciao Andrea,</h1><p>Mostrami, chiedi, delega.<br>Io mi occupo del resto.</p></section>
+<section class="hero-copy">
+<h1>Ciao Andrea,</h1>
+<p>Mostrami, chiedi, delega.<br>Io mi occupo del resto.</p>
+</section>
+
 <section class="orb-section">
-<button id="orbButton" class="orb-button"><div id="orb" class="orb idle"><div class="orb-ring"></div><div class="orb-core"><div id="particles" class="particles hidden"></div><div id="wave" class="wave hidden"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div><div id="orbLabel" class="orb-label">ONE</div></div></div></button>
+<button id="orbButton" class="orb-button">
+<div id="orb" class="orb idle">
+<div class="orb-ring"></div>
+<div class="orb-core">
+<div id="particles" class="particles hidden"></div>
+<div id="wave" class="wave hidden">
+<span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+</div>
+<div id="orbLabel" class="orb-label">ONE</div>
+</div>
+</div>
+</button>
 <div id="orbSubtitle" class="orb-subtitle">Tocca per iniziare</div>
 </section>
-<section class="askbar"><span class="spark">✦</span><input id="promptInput" placeholder="Chiedi qualsiasi cosa…"><button id="micButton" class="mic-btn">◉</button></section>
+
+<section class="askbar">
+<span class="spark">✦</span>
+<input id="promptInput" type="text" placeholder="Chiedi qualsiasi cosa…" enterkeyhint="send" autocomplete="off">
+<button id="micButton" class="mic-btn">◉</button>
+</section>
+
 <section class="quick-actions">
 <button class="quick" id="cameraBtn"><span>⌁</span><small>Mostra</small></button>
 <button class="quick" id="documentBtn"><span>▤</span><small>Documento</small></button>
 <button class="quick" id="photoBtn"><span>▧</span><small>Foto</small></button>
 <button class="quick" id="actionBtn"><span>⚡</span><small>Azione</small></button>
 </section>
-<section class="section-head"><h2>Attività recenti</h2><button>Vedi tutte</button></section>
+
+<input id="cameraInput" type="file" accept="image/*" capture="environment" hidden>
+<input id="photoInput" type="file" accept="image/*" hidden>
+<input id="documentInput" type="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,image/*" hidden>
+
+<section id="captureCard" class="capture-card hidden">
+<img id="captureImage" class="capture-image hidden" alt="Anteprima">
+<div id="captureIcon" class="capture-file-icon hidden">▤</div>
+<div class="capture-copy">
+<strong id="captureTitle">Acquisito</strong>
+<span id="captureMeta"></span>
+</div>
+<button id="clearCapture">×</button>
+</section>
+
+<section id="demoResult" class="demo-result hidden"></section>
+
+<section class="section-head">
+<h2>Attività recenti</h2>
+<button id="seeAll">Vedi tutte</button>
+</section>
+
 <section class="card recent-card">
 <div class="recent-row"><div class="recent-icon">▤</div><div class="recent-copy"><strong>Fattura ACME.pdf</strong><span>Salvata e promemoria creato</span></div><time>10:34</time></div>
 <div class="recent-row"><div class="recent-icon">⌂</div><div class="recent-copy"><strong>Ristorante da Ibiza</strong><span>Aggiunto ai preferiti</span></div><time>Ieri</time></div>
 <div class="recent-row"><div class="recent-icon">✈</div><div class="recent-copy"><strong>Volo per Milano</strong><span>Monitoraggio attivo</span></div><time>Ieri</time></div>
 </section>
-<section class="card memory-card"><div class="memory-orb"><div></div></div><div class="memory-copy"><strong>La tua memoria privata</strong><span>ONE ricorda ciò che conta, così non devi farlo tu.</span></div><span class="chev">›</span></section>
-<section id="demoResult" class="demo-result hidden"></section>
+
+<section class="card memory-card">
+<div class="memory-orb"><div></div></div>
+<div class="memory-copy"><strong>La tua memoria privata</strong><span>ONE ricorda ciò che conta, così non devi farlo tu.</span></div>
+<span class="chev">›</span>
+</section>
+
 <div class="bottom-space"></div>
 </main>
-<nav class="bottom-nav"><button class="active">⌂</button><button>▱</button><button id="navOrb" class="nav-orb"><span></span></button><button>⌕</button><button>◯</button></nav>
+
+<nav class="bottom-nav">
+<button class="active">⌂</button>
+<button>▱</button>
+<button id="navOrb" class="nav-orb"><span></span></button>
+<button>⌕</button>
+<button>◯</button>
+</nav>
 </div>
-<script src="app.js"></script>
+
+<script src="app.js?v=3"></script>
 </body>
 </html>
