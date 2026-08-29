@@ -1,5 +1,18 @@
-ONE Web Demo 0.2
+ONE AI 0.4
 
-Sostituisci nella root tutti i file del pacchetto.
+Sostituisci nel repository GitHub:
+- app.js
+- index.html
 
-Ora funzionano: fotocamera, libreria foto, documenti, registrazione microfono, input testuale e feedback interattivi. AI vera non ancora collegata.
+Poi attendi il deploy di GitHub Pages e apri:
+https://andrea70031.github.io/one-app/?v=4
+
+Funzioni AI attive:
+- testo
+- fotocamera
+- immagini dalla libreria
+
+Non ancora collegate in questa build:
+- PDF nativi
+- trascrizione voce
+- esecuzione reale delle azioni
