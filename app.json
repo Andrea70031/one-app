@@ -1,0 +1,23 @@
+{
+  "expo": {
+    "name": "ONE",
+    "slug": "one-app",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#05070B",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.one.assistant"
+    },
+    "android": {
+      "package": "com.one.assistant",
+      "adaptiveIcon": {
+        "backgroundColor": "#05070B"
+      }
+    },
+    "web": {
+      "bundler": "metro"
+    }
+  }
+}
