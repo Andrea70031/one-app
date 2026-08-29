@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="ONE">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
-<link rel="stylesheet" href="styles.css?v=5">
+<link rel="stylesheet" href="styles.css?v=6">
 <title>ONE</title>
 </head>
 <body>
@@ -97,7 +97,8 @@
 <div class="recall-hero">
 <div class="recall-orb"><span></span></div>
 <h2>Ricorda senza organizzare</h2>
-<p>ONE conserva localmente la cronologia essenziale delle tue interazioni. La memoria cloud arriverà in una versione successiva.</p>
+<p id="recallDescription">ONE conserva la cronologia essenziale delle tue interazioni. Accedi per sincronizzarla in modo privato tra dispositivi.</p>
+<div id="recallCloudState" class="cloud-state">○ Solo dispositivo</div>
 </div>
 <div id="recallList" class="stack"></div>
 <div class="bottom-space"></div>
@@ -113,14 +114,18 @@
 <section id="profileView" class="view">
 <div class="view-header"><button class="back-btn" data-home>‹</button><div><h1>Profilo</h1><p>ONE Beta</p></div></div>
 <div class="profile-hero card">
-<div class="avatar">A</div>
-<div><strong>Andrea</strong><span>Account locale · Beta</span></div>
+<div class="avatar" id="profileAvatar">A</div>
+<div><strong id="profileName">Andrea</strong><span id="profileStatus">Modalità locale · Beta</span></div>
+</div>
+<div id="accountCard" class="account-card card">
+<div class="account-copy"><strong id="accountTitle">Sincronizza ONE</strong><span id="accountSubtitle">Accedi per avere Recall e attività sul cloud.</span></div>
+<button id="accountBtn" class="account-btn">Accedi</button>
 </div>
 <div class="settings-group">
 <button data-open="settings"><span>⚙</span><div><strong>Impostazioni</strong><small>Preferenze di ONE</small></div><b>›</b></button>
 <button data-open="privacy"><span>◈</span><div><strong>Privacy</strong><small>Come vengono gestiti i dati</small></div><b>›</b></button>
-<button data-open="terms"><span>§</span><div><strong>Termini di utilizzo</strong><small>Versione 29/08/2026</small></div><b>›</b></button>
-<button data-open="about"><span>ⓘ</span><div><strong>Informazioni</strong><small>ONE 0.5 Beta</small></div><b>›</b></button>
+<button data-open="terms"><span>§</span><div><strong>Termini di utilizzo</strong><small>Versione 1.1 · 29/08/2026</small></div><b>›</b></button>
+<button data-open="about"><span>ⓘ</span><div><strong>Informazioni</strong><small>ONE 0.6 Beta</small></div><b>›</b></button>
 </div>
 <div class="bottom-space"></div>
 </section>
@@ -149,6 +154,7 @@
 <span class="drawer-label">ONE</span>
 <button data-open="actions"><i>⚡</i><span>Centro azioni</span></button>
 <button data-open="integrations"><i>⌘</i><span>Integrazioni</span></button>
+<button data-open="account"><i>◎</i><span>Account e cloud</span></button>
 <button data-open="settings"><i>⚙</i><span>Impostazioni</span></button>
 </div>
 <div class="drawer-section">
@@ -156,13 +162,31 @@
 <button data-open="privacy"><i>◈</i><span>Privacy</span></button>
 <button data-open="terms"><i>§</i><span>Termini di utilizzo</span></button>
 </div>
-<div class="drawer-foot">ONE 0.5 Beta · 2026</div>
+<div class="drawer-foot">ONE 0.6 Beta · 2026</div>
 </aside>
 
 <div id="sheet" class="sheet" aria-hidden="true">
 <div class="sheet-handle"></div>
 <div class="sheet-head"><div><h2 id="sheetTitle">ONE</h2><p id="sheetSubtitle"></p></div><button id="sheetClose">×</button></div>
 <div id="sheetBody" class="sheet-body"></div>
+</div>
+
+
+<div id="authModal" class="auth-modal hidden">
+<div class="auth-card">
+<button id="authClose" class="auth-close">×</button>
+<div class="legal-logo">O N E</div>
+<h1 id="authTitle">Accedi a ONE</h1>
+<p id="authLead">Sincronizza Recall e attività in modo privato.</p>
+<form id="authForm">
+<label>Email<input id="authEmail" type="email" inputmode="email" autocomplete="email" placeholder="nome@email.it" required></label>
+<label>Password<input id="authPassword" type="password" autocomplete="current-password" minlength="6" placeholder="Almeno 6 caratteri" required></label>
+<button id="authSubmit" class="primary-btn" type="submit">Accedi</button>
+</form>
+<button id="authModeBtn" class="auth-mode-btn">Non hai un account? Crealo</button>
+<div id="authMessage" class="auth-message hidden"></div>
+<small class="auth-note">Le credenziali vengono gestite da Supabase Auth. ONE non salva la password nel browser.</small>
+</div>
 </div>
 
 <div id="legalGate" class="legal-gate hidden">
@@ -177,10 +201,10 @@
 </div>
 <label class="consent-check"><input id="legalCheck" type="checkbox"><span>Ho letto e accetto i <button type="button" id="gateTerms">Termini di utilizzo</button> e ho preso visione della <button type="button" id="gatePrivacy">Privacy</button>.</span></label>
 <button id="acceptLegal" class="primary-btn" disabled>Continua con ONE</button>
-<small class="legal-version">Termini v1.0 · 29 agosto 2026</small>
+<small class="legal-version">Termini v1.1 · 29 agosto 2026</small>
 </div>
 </div>
 
-<script src="app.js?v=5"></script>
+<script src="app.js?v=6"></script>
 </body>
 </html>
