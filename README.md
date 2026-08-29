@@ -1,92 +1,62 @@
-# ONE — MVP 0.1
+# ONE — MVP 0.2
 
-Prima base software di ONE: assistente mobile centrato su un'unica interfaccia universale.
+Questa versione porta ONE dal concept interattivo alla prima app che **vede, riceve documenti e ascolta**.
 
-## Cosa c'è già
+## Nuovo in 0.2
 
-- Home mobile-first in React Native / Expo
-- Orb centrale animata
-- 5 stati visivi:
-  - Riposo
-  - Attivazione
-  - Ascolto
-  - Elaborazione
-  - Fatto
-- Input testuale
-- Pulsante microfono (UI, non ancora registrazione reale)
-- Azioni rapide Fotocamera / Documento / Foto / Azione
-- Attività recenti
-- Primo accesso alla futura memoria "Recall"
-- Bottom navigation
-- Dark UI coerente con il concept ONE
+- Fotocamera reale tramite UI di sistema
+- Selezione immagini dalla libreria
+- Selezione documenti dal dispositivo / iCloud Drive
+- Registrazione audio reale
+- Gestione permessi fotocamera, foto e microfono
+- Anteprima dell'ultimo contenuto acquisito
+- Orb collegata agli stati:
+  - acquisizione
+  - ascolto
+  - elaborazione simulata
+  - completamento
+- Base pronta per inviare contenuti all'AI nel prossimo step
 
-## Stack
+## Installazione
 
-- Expo SDK 57
-- React Native 0.86
-- React 19.2
-- TypeScript
-- expo-linear-gradient
-- @expo/vector-icons
-
-## Avvio rapido
-
-1. Installa Node.js 22.13 o superiore.
-2. Estrai questa cartella.
-3. Apri il terminale nella cartella `ONE_MVP_0_1`.
-4. Esegui:
+Dalla cartella del progetto:
 
 ```bash
 npm install
 npx expo start
 ```
 
-5. Installa **Expo Go** sull'iPhone.
-6. Assicurati che PC e iPhone siano sulla stessa rete.
-7. Scansiona il QR code mostrato da Expo.
+Oppure, se stai aggiornando la 0.1 manualmente:
 
-> Expo Go è perfetto per questa fase visuale e logica. Per una build iOS personalizzata/TestFlight servirà poi Apple Developer.
+```bash
+npx expo install expo-image-picker expo-document-picker expo-audio
+```
 
-## Interazione demo
+## Test su iPhone
 
-Tocca la grande O:
-- idle → activating
-- activating → listening
-- listening → thinking
-- thinking → done
-- done → idle
+Apri il progetto con Expo Go e prova:
 
-Lo stato "activating" passa automaticamente a "listening".
-Lo stato "done" torna automaticamente a riposo.
+- **Mostra** → apre la fotocamera
+- **Foto** → apre la libreria
+- **Documento** → apre il selettore file
+- **Parla** → avvia la registrazione
+- premendo di nuovo **Stop** termina l'audio
 
-Scrivendo nella barra e premendo invio viene simulata una richiesta:
-- elaborazione
-- completamento
+Alla prima apertura iOS chiederà i permessi necessari.
 
-## Roadmap immediata
+## Cosa NON fa ancora
 
-### MVP 0.2
-- Fotocamera reale
-- Picker immagini/documenti
-- Registrazione voce
-- Permessi iOS/Android
-- Sheet contestuale dopo acquisizione
+La fase di "elaborazione" è ancora simulata.
 
-### MVP 0.3
-- Backend
-- Autenticazione
-- Database memoria
-- Upload privati
-- Modello dati universale `OneItem`
+Il contenuto viene acquisito davvero, ma non viene ancora inviato a un modello AI. Questo è intenzionale: la 0.3 collegherà backend, storage privato e modello multimodale.
 
-### MVP 0.4
+## Prossimo step: MVP 0.3
+
+- API/backend sicuro
+- upload foto/documenti/audio
 - AI multimodale
-- classificazione automatica
-- estrazione dati
-- suggerimento azioni
-
-### MVP 0.5
-- Recall / ricerca semantica
-- reminder
-- monitoraggi
-- azioni automatiche
+- trascrizione voce
+- riconoscimento tipo di contenuto
+- output strutturato
+- prima logica di azioni suggerite
+- salvataggio nella memoria Recall

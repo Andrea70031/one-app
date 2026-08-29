@@ -2,7 +2,7 @@
   "expo": {
     "name": "ONE",
     "slug": "one-app",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#05070B",
@@ -18,6 +18,23 @@
     },
     "web": {
       "bundler": "metro"
-    }
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "ONE usa le tue foto solo quando scegli di mostrarle all'assistente.",
+          "cameraPermission": "ONE usa la fotocamera solo quando scegli di mostrare qualcosa all'assistente.",
+          "microphonePermission": "ONE usa il microfono solo quando scegli di registrare audio."
+        }
+      ],
+      [
+        "expo-audio",
+        {
+          "microphonePermission": "ONE usa il microfono solo quando scegli di parlare con l'assistente.",
+          "enableBackgroundRecording": false
+        }
+      ]
+    ]
   }
 }
