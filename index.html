@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="ONE">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
-<link rel="stylesheet" href="styles.css?v=7">
+<link rel="stylesheet" href="styles.css?v=8">
 <title>ONE</title>
 </head>
 <body>
@@ -86,6 +86,39 @@
 <div class="bottom-space"></div>
 </main>
 
+<section id="spacesView" class="view">
+<div class="view-header"><button class="back-btn" data-home>‹</button><div><h1>Spazi</h1><p>La tua vita e il tuo lavoro in ONE</p></div></div>
+<button class="personal-space card" data-nav="recall">
+<div class="memory-orb"><div></div></div>
+<div><strong>Spazio personale</strong><span>Recall, attività, promemoria e azioni</span></div>
+<span class="chev">›</span>
+</button>
+<div class="workspace-heading"><div><span>AZIENDA</span><h2>Cantieri</h2></div><small id="workspaceState">Accedi per sincronizzare</small></div>
+<div id="workspaceSites" class="workspace-list"><div class="empty-state">I cantieri assegnati appariranno qui.</div></div>
+<div class="bottom-space"></div>
+</section>
+
+<section id="siteView" class="view">
+<div class="view-header site-view-header"><button class="back-btn" id="siteBack">‹</button><div><h1 id="siteTitle">Cantiere</h1><p id="siteSubtitle">Spazio di lavoro</p></div></div>
+<div class="site-hero card">
+<div><span id="siteStatus" class="site-status">Attivo</span><strong id="siteProgress">0%</strong><small>avanzamento</small></div>
+<p id="siteAddress">Indirizzo cantiere</p>
+</div>
+<form id="siteAskForm" class="site-ask">
+<span class="mini-orb"></span>
+<input id="sitePromptInput" type="text" placeholder="Chiedi a ONE su questo cantiere…" autocomplete="off">
+<button type="submit">↑</button>
+</form>
+<section id="siteAiResult" class="demo-result hidden"></section>
+<div class="workspace-heading"><div><span>PULSE</span><h2>Situazione adesso</h2></div></div>
+<div id="sitePulse"><div class="empty-state">Caricamento…</div></div>
+<div class="workspace-heading"><div><span>PRIORITÀ</span><h2>Problemi aperti</h2></div></div>
+<div id="siteIssues" class="site-list"><div class="empty-state compact">Caricamento…</div></div>
+<div class="workspace-heading"><div><span>DIARIO</span><h2>Ultimi aggiornamenti</h2></div></div>
+<div id="siteFeed" class="site-list"><div class="empty-state compact">Caricamento…</div></div>
+<div class="bottom-space"></div>
+</section>
+
 <section id="activitiesView" class="view">
 <div class="view-header"><button class="back-btn" data-home>‹</button><div><h1>Attività</h1><p>Ciò che ONE ha gestito</p></div></div>
 <div id="allActivities" class="stack"></div>
@@ -125,14 +158,14 @@
 <button data-open="settings"><span>⚙</span><div><strong>Impostazioni</strong><small>Preferenze di ONE</small></div><b>›</b></button>
 <button data-open="privacy"><span>◈</span><div><strong>Privacy</strong><small>Come vengono gestiti i dati</small></div><b>›</b></button>
 <button data-open="terms"><span>§</span><div><strong>Termini di utilizzo</strong><small>Versione 1.1 · 29/08/2026</small></div><b>›</b></button>
-<button data-open="about"><span>ⓘ</span><div><strong>Informazioni</strong><small>ONE 0.7 Beta</small></div><b>›</b></button>
+<button data-open="about"><span>ⓘ</span><div><strong>Informazioni</strong><small>ONE 0.8 Beta</small></div><b>›</b></button>
 </div>
 <div class="bottom-space"></div>
 </section>
 
 <nav class="bottom-nav">
 <button id="navHome" class="active" aria-label="Home">⌂</button>
-<button id="navActivity" aria-label="Attività">▱</button>
+<button id="navSpaces" aria-label="Spazi">◇</button>
 <button id="navOrb" class="nav-orb" aria-label="Parla con ONE"><span></span></button>
 <button id="navSearch" aria-label="Cerca">⌕</button>
 <button id="navProfile" aria-label="Profilo">◯</button>
@@ -146,6 +179,7 @@
 <div class="drawer-section">
 <span class="drawer-label">ESPLORA</span>
 <button data-nav="home"><i>⌂</i><span>Home</span></button>
+<button data-nav="spaces"><i>◇</i><span>Spazi</span><em>NUOVO</em></button>
 <button data-nav="activities"><i>▱</i><span>Attività</span></button>
 <button data-nav="recall"><i>◌</i><span>Recall</span><em>BETA</em></button>
 <button data-nav="search"><i>⌕</i><span>Cerca</span></button>
@@ -162,7 +196,7 @@
 <button data-open="privacy"><i>◈</i><span>Privacy</span></button>
 <button data-open="terms"><i>§</i><span>Termini di utilizzo</span></button>
 </div>
-<div class="drawer-foot">ONE 0.7 Beta · 2026</div>
+<div class="drawer-foot">ONE 0.8 Beta · 2026</div>
 </aside>
 
 <div id="sheet" class="sheet" aria-hidden="true">
@@ -184,6 +218,7 @@
 <button id="authSubmit" class="primary-btn" type="submit">Accedi</button>
 </form>
 <button id="authModeBtn" class="auth-mode-btn">Non hai un account? Crealo</button>
+<button id="authResetBtn" class="auth-mode-btn">Password dimenticata?</button>
 <div id="authMessage" class="auth-message hidden"></div>
 <small class="auth-note">Le credenziali vengono gestite da Supabase Auth. ONE non salva la password nel browser.</small>
 </div>
@@ -205,6 +240,6 @@
 </div>
 </div>
 
-<script src="app.js?v=7"></script>
+<script src="app.js?v=8"></script>
 </body>
 </html>
