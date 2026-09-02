@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="ONE">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
-<link rel="stylesheet" href="styles.css?v=8">
+<link rel="stylesheet" href="styles.css?v=9">
 <title>ONE</title>
 </head>
 <body>
@@ -70,6 +70,19 @@
 
 <section id="demoResult" class="demo-result hidden"></section>
 
+<section id="todaySection" class="today-section">
+<div class="section-head today-head">
+<div><span>ONE PULSE</span><h2>Oggi</h2></div>
+<button id="refreshToday" aria-label="Aggiorna situazione">Aggiorna</button>
+</div>
+<div id="todayState" class="today-state card">
+<div class="today-login-copy"><strong>Il tuo briefing operativo</strong><span>Accedi per vedere priorità, scadenze e cantieri da aggiornare.</span></div>
+<button id="todayLogin">Accedi</button>
+</div>
+<div id="todayMetrics" class="today-metrics hidden"></div>
+<div id="todayList" class="today-list hidden"></div>
+</section>
+
 <section class="section-head">
 <h2>Attività recenti</h2>
 <button id="seeAll">Vedi tutte</button>
@@ -103,6 +116,12 @@
 <div class="site-hero card">
 <div><span id="siteStatus" class="site-status">Attivo</span><strong id="siteProgress">0%</strong><small>avanzamento</small></div>
 <p id="siteAddress">Indirizzo cantiere</p>
+</div>
+<div class="site-quick-actions">
+<button data-site-action="create_issue"><span>!</span><small>Problema</small></button>
+<button data-site-action="create_activity"><span>✓</span><small>Attività</small></button>
+<button data-site-action="create_daily_report"><span>▤</span><small>Report</small></button>
+<button data-site-action="update_site_progress"><span>%</span><small>Avanzamento</small></button>
 </div>
 <form id="siteAskForm" class="site-ask">
 <span class="mini-orb"></span>
@@ -155,10 +174,11 @@
 <button id="accountBtn" class="account-btn">Accedi</button>
 </div>
 <div class="settings-group">
+<button data-open="examples"><span>✦</span><div><strong>Esempi pronti</strong><small>Installa un cantiere demo completo</small></div><b>›</b></button>
 <button data-open="settings"><span>⚙</span><div><strong>Impostazioni</strong><small>Preferenze di ONE</small></div><b>›</b></button>
 <button data-open="privacy"><span>◈</span><div><strong>Privacy</strong><small>Come vengono gestiti i dati</small></div><b>›</b></button>
 <button data-open="terms"><span>§</span><div><strong>Termini di utilizzo</strong><small>Versione 1.1 · 29/08/2026</small></div><b>›</b></button>
-<button data-open="about"><span>ⓘ</span><div><strong>Informazioni</strong><small>ONE 0.8 Beta</small></div><b>›</b></button>
+<button data-open="about"><span>ⓘ</span><div><strong>Informazioni</strong><small>ONE 0.9 Pulse Beta</small></div><b>›</b></button>
 </div>
 <div class="bottom-space"></div>
 </section>
@@ -196,7 +216,7 @@
 <button data-open="privacy"><i>◈</i><span>Privacy</span></button>
 <button data-open="terms"><i>§</i><span>Termini di utilizzo</span></button>
 </div>
-<div class="drawer-foot">ONE 0.8 Beta · 2026</div>
+<div class="drawer-foot">ONE 0.9 Pulse Beta · 2026</div>
 </aside>
 
 <div id="sheet" class="sheet" aria-hidden="true">
@@ -240,6 +260,6 @@
 </div>
 </div>
 
-<script src="app.js?v=8"></script>
+<script src="app.js?v=9"></script>
 </body>
 </html>
