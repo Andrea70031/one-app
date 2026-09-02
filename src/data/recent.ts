@@ -36,3 +36,4 @@ export const recentItems: RecentItem[] = [
     icon: 'briefcase',
   },
 ];
+

@@ -60,3 +60,4 @@ Il contenuto viene acquisito davvero, ma non viene ancora inviato a un modello A
 - output strutturato
 - prima logica di azioni suggerite
 - salvataggio nella memoria Recall
+
