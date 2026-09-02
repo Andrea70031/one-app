@@ -10,7 +10,8 @@ const jsonHeaders = {
 
 const actionKinds = [
   "reminder", "calendar", "email", "call", "maps", "share", "copy",
-  "download", "search", "open_url", "sms", "whatsapp", "save", "none",
+  "download", "search", "open_url", "sms", "whatsapp", "save",
+  "create_issue", "create_activity", "create_daily_report", "update_site_progress", "none",
 ];
 
 const actionPayloadProperties = {
@@ -32,6 +33,19 @@ const actionPayloadProperties = {
   content: { type: ["string", "null"] },
   filename: { type: ["string", "null"] },
   mime: { type: ["string", "null"] },
+  site_id: { type: ["string", "null"] },
+  site_job_number: { type: ["string", "null"] },
+  priority: { type: ["string", "null"] },
+  status: { type: ["string", "null"] },
+  details: { type: ["string", "null"] },
+  notes: { type: ["string", "null"] },
+  report_date: { type: ["string", "null"] },
+  summary: { type: ["string", "null"] },
+  works: { type: ["string", "null"] },
+  blockers: { type: ["string", "null"] },
+  workers: { type: ["number", "null"] },
+  hours: { type: ["number", "null"] },
+  progress: { type: ["number", "null"] },
 };
 
 const resultSchema = {
@@ -180,7 +194,7 @@ export default {
         headers: { "Authorization": `Bearer ${openaiKey}`, "Content-Type": "application/json" },
         body: JSON.stringify({
           model: "gpt-5.6-luna",
-          instructions: "Sei ONE, assistente operativo personale e aziendale. Rispondi in italiano, con tono sintetico e concreto. Usa solo i dati e gli allegati disponibili: non inventare persone, decisioni, scadenze o valori. Se proponi azioni esterne, prepara i dati ma non dichiarare mai che l'azione è stata eseguita. Nei cantieri evidenzia prima sicurezza, blocchi, responsabilità e scadenze. Restituisci al massimo quattro azioni utili.",
+          instructions: "Sei ONE, assistente operativo personale e aziendale. Rispondi in italiano, con tono sintetico e concreto. Usa solo i dati e gli allegati disponibili: non inventare persone, decisioni, scadenze o valori. Se l'utente vuole registrare qualcosa in un cantiere, proponi create_issue, create_activity, create_daily_report o update_site_progress. Usa site_id soltanto quando corrisponde senza ambiguità a un cantiere presente nel contesto; altrimenti lascialo null e valorizza site_job_number solo se esplicitamente indicato. Prepara sempre l'operazione per la revisione dell'utente e non dichiarare mai che sia già stata eseguita. Se proponi azioni esterne, prepara i dati ma non dichiarare mai che l'azione è stata eseguita. Nei cantieri evidenzia prima sicurezza, blocchi, responsabilità e scadenze. Restituisci al massimo quattro azioni utili.",
           input: [{ role: "user", content }],
           max_output_tokens: 1200,
           text: { format: { type: "json_schema", name: "one_result", strict: true, schema: resultSchema } },
