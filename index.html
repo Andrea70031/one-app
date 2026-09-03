@@ -9,7 +9,7 @@
 <meta name="apple-mobile-web-app-title" content="ONE">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icon-192.png">
-<link rel="stylesheet" href="styles.css?v=9">
+<link rel="stylesheet" href="styles.css?v=10">
 <title>ONE</title>
 </head>
 <body>
@@ -117,6 +117,11 @@
 <div><span id="siteStatus" class="site-status">Attivo</span><strong id="siteProgress">0%</strong><small>avanzamento</small></div>
 <p id="siteAddress">Indirizzo cantiere</p>
 </div>
+<button id="walkthroughStart" class="walkthrough-start">
+<span class="walkthrough-start-icon">◎</span>
+<span><strong>Avvia sopralluogo AI</strong><small>Parla, fotografa e lascia che ONE prepari il rapporto</small></span>
+<b>›</b>
+</button>
 <div class="site-quick-actions">
 <button data-site-action="create_issue"><span>!</span><small>Problema</small></button>
 <button data-site-action="create_activity"><span>✓</span><small>Attività</small></button>
@@ -135,6 +140,33 @@
 <div id="siteIssues" class="site-list"><div class="empty-state compact">Caricamento…</div></div>
 <div class="workspace-heading"><div><span>DIARIO</span><h2>Ultimi aggiornamenti</h2></div></div>
 <div id="siteFeed" class="site-list"><div class="empty-state compact">Caricamento…</div></div>
+<div class="bottom-space"></div>
+</section>
+
+<section id="walkthroughView" class="view">
+<div class="view-header site-view-header"><button class="back-btn" id="walkthroughBack">‹</button><div><h1>Sopralluogo</h1><p id="walkthroughSiteName">Cantiere</p></div></div>
+<div id="walkthroughCapture">
+<div class="walkthrough-hero card">
+<span>ONE SITE COPILOT</span>
+<h2>Racconta ciò che vedi</h2>
+<p>Aggiungi appunti, registra la voce e scatta fotografie. ONE preparerà una bozza unica da controllare.</p>
+</div>
+<label class="walkthrough-label" for="walkthroughNotes">APPUNTI DEL SOPRALLUOGO</label>
+<textarea id="walkthroughNotes" class="walkthrough-notes" maxlength="8000" placeholder="Esempio: completata la posa dei serramenti al piano primo; manca il vetro della scala…"></textarea>
+<div class="walkthrough-capture-actions">
+<button id="walkthroughVoice" type="button"><span>◉</span><strong>Voce</strong><small>Detta una nota</small></button>
+<button id="walkthroughCamera" type="button"><span>⌁</span><strong>Scatta</strong><small>Usa la fotocamera</small></button>
+<button id="walkthroughLibrary" type="button"><span>▧</span><strong>Foto</strong><small>Scegli più immagini</small></button>
+</div>
+<input id="walkthroughCameraInput" type="file" accept="image/*" capture="environment" hidden>
+<input id="walkthroughPhotoInput" type="file" accept="image/*" multiple hidden>
+<div class="walkthrough-photo-head"><span>FOTOGRAFIE</span><small id="walkthroughPhotoCount">0 di 6</small></div>
+<div id="walkthroughPhotos" class="walkthrough-photos"><button id="walkthroughEmptyPhotos" type="button" class="walkthrough-empty">Aggiungi fotografie utili a documentare lavorazioni e criticità</button></div>
+<div id="walkthroughStatus" class="operation-status hidden"></div>
+<button id="analyzeWalkthrough" class="primary-btn" type="button">Prepara il rapporto con ONE</button>
+<button id="discardWalkthrough" class="walkthrough-secondary" type="button">Annulla sopralluogo</button>
+</div>
+<div id="walkthroughReview" class="hidden"></div>
 <div class="bottom-space"></div>
 </section>
 
@@ -178,7 +210,7 @@
 <button data-open="settings"><span>⚙</span><div><strong>Impostazioni</strong><small>Preferenze di ONE</small></div><b>›</b></button>
 <button data-open="privacy"><span>◈</span><div><strong>Privacy</strong><small>Come vengono gestiti i dati</small></div><b>›</b></button>
 <button data-open="terms"><span>§</span><div><strong>Termini di utilizzo</strong><small>Versione 1.1 · 29/08/2026</small></div><b>›</b></button>
-<button data-open="about"><span>ⓘ</span><div><strong>Informazioni</strong><small>ONE 0.9 Pulse Beta</small></div><b>›</b></button>
+<button data-open="about"><span>ⓘ</span><div><strong>Informazioni</strong><small>ONE 1.0 Site Copilot Beta</small></div><b>›</b></button>
 </div>
 <div class="bottom-space"></div>
 </section>
@@ -216,7 +248,7 @@
 <button data-open="privacy"><i>◈</i><span>Privacy</span></button>
 <button data-open="terms"><i>§</i><span>Termini di utilizzo</span></button>
 </div>
-<div class="drawer-foot">ONE 0.9 Pulse Beta · 2026</div>
+<div class="drawer-foot">ONE 1.0 Site Copilot Beta · 2026</div>
 </aside>
 
 <div id="sheet" class="sheet" aria-hidden="true">
@@ -260,6 +292,6 @@
 </div>
 </div>
 
-<script src="app.js?v=9"></script>
+<script src="app.js?v=10"></script>
 </body>
 </html>

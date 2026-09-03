@@ -48,10 +48,52 @@ const actionPayloadProperties = {
   progress: { type: ["number", "null"] },
 };
 
+const walkthroughSchema = {
+  type: ["object", "null"],
+  additionalProperties: false,
+  required: ["summary", "works", "blockers", "workers", "hours", "suggested_progress", "activities", "issues"],
+  properties: {
+    summary: { type: ["string", "null"] },
+    works: { type: ["string", "null"] },
+    blockers: { type: ["string", "null"] },
+    workers: { type: ["number", "null"] },
+    hours: { type: ["number", "null"] },
+    suggested_progress: { type: ["number", "null"] },
+    activities: {
+      type: "array",
+      maxItems: 8,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["title", "notes"],
+        properties: {
+          title: { type: "string" },
+          notes: { type: ["string", "null"] },
+        },
+      },
+    },
+    issues: {
+      type: "array",
+      maxItems: 8,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["title", "details", "priority", "due_at"],
+        properties: {
+          title: { type: "string" },
+          details: { type: ["string", "null"] },
+          priority: { type: "string", enum: ["Bassa", "Media", "Alta", "Critica"] },
+          due_at: { type: ["string", "null"] },
+        },
+      },
+    },
+  },
+};
+
 const resultSchema = {
   type: "object",
   additionalProperties: false,
-  required: ["summary", "intent", "memory_title", "memory_summary", "extracted", "actions"],
+  required: ["summary", "intent", "memory_title", "memory_summary", "extracted", "actions", "walkthrough"],
   properties: {
     summary: { type: "string" },
     intent: { type: "string" },
@@ -85,6 +127,7 @@ const resultSchema = {
         },
       },
     },
+    walkthrough: walkthroughSchema,
   },
 };
 
@@ -103,15 +146,25 @@ function outputText(payload: any) {
   return pieces.join("\n").trim();
 }
 
-function fallback(message: string, site: any, issues: any[], activities: any[], reports: any[]) {
+function fallback(message: string, site: any, issues: any[], activities: any[], reports: any[], mode: string) {
   const open = issues.filter((issue) => !["Risolto", "Chiusa", "Completata"].includes(issue.status));
   const urgent = open.filter((issue) => ["Critica", "Alta"].includes(issue.priority));
   const prefix = site
     ? `${site.job_number} — ${site.name}: avanzamento ${site.progress || 0}%. `
     : "";
   const summary = `${prefix}${open.length} problemi aperti, ${urgent.length} ad alta priorità, ${activities.length} attività recenti${reports[0] ? `; ultimo report ${reports[0].report_date}` : ""}.`;
+  const walkthrough = mode === "walkthrough" ? {
+    summary: "Bozza generata dagli appunti del sopralluogo",
+    works: message || null,
+    blockers: null,
+    workers: null,
+    hours: null,
+    suggested_progress: null,
+    activities: message ? [{ title: "Nota dal sopralluogo", notes: message }] : [],
+    issues: [],
+  } : null;
   return {
-    summary,
+    summary: walkthrough ? `Bozza del sopralluogo pronta per ${site?.name || "il cantiere"}.` : summary,
     intent: message,
     memory_title: site ? `Aggiornamento ${site.job_number}` : "Richiesta a ONE",
     memory_summary: summary,
@@ -120,6 +173,7 @@ function fallback(message: string, site: any, issues: any[], activities: any[], 
       { key: "urgent_issues", value: String(urgent.length) },
     ],
     actions: [],
+    walkthrough,
   };
 }
 
@@ -130,15 +184,20 @@ export default {
 
     const body = await req.json().catch(() => ({}));
     const message = String(body.text || body.message || "").trim();
+    const mode = body.mode === "walkthrough" ? "walkthrough" : "assistant";
     const siteId = body.site_id ? String(body.site_id) : null;
     const image = typeof body.image === "string" ? body.image : null;
+    const images = Array.isArray(body.images)
+      ? body.images.filter((value: unknown) => typeof value === "string" && value.startsWith("data:image/")).slice(0, 6)
+      : [];
     const file = typeof body.file === "string" ? body.file : null;
     const filename = String(body.filename || "documento").slice(0, 160);
     const userId = ctx.userClaims?.id;
 
     if (!userId) return response({ error: "Utente non autenticato" }, 401);
-    if (!message && !image && !file) return response({ error: "Richiesta vuota" }, 400);
-    if ((image?.length || 0) > 14_000_000 || (file?.length || 0) > 14_000_000) {
+    if (!message && !image && !file && !images.length) return response({ error: "Richiesta vuota" }, 400);
+    const imageBytes = images.reduce((total: number, value: string) => total + value.length, image?.length || 0);
+    if (imageBytes > 28_000_000 || (file?.length || 0) > 14_000_000) {
       return response({ error: "Allegato troppo grande" }, 413);
     }
 
@@ -184,6 +243,7 @@ export default {
       text: `${message || "Analizza l'allegato."}\n\nCONTESTO ONE DISPONIBILE:\n${context}`,
     }];
     if (image) content.push({ type: "input_image", image_url: image, detail: "auto" });
+    for (const imageUrl of images) content.push({ type: "input_image", image_url: imageUrl, detail: "auto" });
     if (file) content.push({ type: "input_file", filename, file_data: file });
 
     let result: any = null;
@@ -194,9 +254,9 @@ export default {
         headers: { "Authorization": `Bearer ${openaiKey}`, "Content-Type": "application/json" },
         body: JSON.stringify({
           model: "gpt-5.6-luna",
-          instructions: "Sei ONE, assistente operativo personale e aziendale. Rispondi in italiano, con tono sintetico e concreto. Usa solo i dati e gli allegati disponibili: non inventare persone, decisioni, scadenze o valori. Se l'utente vuole registrare qualcosa in un cantiere, proponi create_issue, create_activity, create_daily_report o update_site_progress. Usa site_id soltanto quando corrisponde senza ambiguità a un cantiere presente nel contesto; altrimenti lascialo null e valorizza site_job_number solo se esplicitamente indicato. Prepara sempre l'operazione per la revisione dell'utente e non dichiarare mai che sia già stata eseguita. Se proponi azioni esterne, prepara i dati ma non dichiarare mai che l'azione è stata eseguita. Nei cantieri evidenzia prima sicurezza, blocchi, responsabilità e scadenze. Restituisci al massimo quattro azioni utili.",
+          instructions: `Sei ONE, assistente operativo personale e aziendale. Rispondi in italiano, con tono sintetico e concreto. Usa solo i dati e gli allegati disponibili: non inventare persone, decisioni, scadenze o valori. Se l'utente vuole registrare qualcosa in un cantiere, proponi create_issue, create_activity, create_daily_report o update_site_progress. Usa site_id soltanto quando corrisponde senza ambiguità a un cantiere presente nel contesto; altrimenti lascialo null e valorizza site_job_number solo se esplicitamente indicato. Prepara sempre l'operazione per la revisione dell'utente e non dichiarare mai che sia già stata eseguita. Nei cantieri evidenzia prima sicurezza, blocchi, responsabilità e scadenze. Se mode è walkthrough, compila walkthrough come bozza completa del sopralluogo: separa lavorazioni svolte, blocchi, attività e criticità; non trasformare la stessa osservazione sia in attività sia in criticità; usa suggested_progress solo se gli elementi osservati giustificano concretamente la variazione, altrimenti null; usa null per persone, ore e scadenze non dichiarate; lascia actions vuoto. Se mode non è walkthrough, imposta walkthrough a null. Mode corrente: ${mode}. Restituisci al massimo quattro azioni utili.`,
           input: [{ role: "user", content }],
-          max_output_tokens: 1200,
+          max_output_tokens: mode === "walkthrough" ? 2200 : 1200,
           text: { format: { type: "json_schema", name: "one_result", strict: true, schema: resultSchema } },
         }),
       });
@@ -207,7 +267,7 @@ export default {
       }
     }
 
-    if (!result) result = fallback(message, siteId ? site : null, issues, activities, reports);
+    if (!result) result = fallback(message, siteId ? site : null, issues, activities, reports, mode);
 
     await ctx.supabase.from("ai_messages").insert({
       site_id: siteId,
