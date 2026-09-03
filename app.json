@@ -2,7 +2,7 @@
   "expo": {
     "name": "ONE",
     "slug": "one-app",
-    "version": "0.9.0",
+    "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#05070B",
