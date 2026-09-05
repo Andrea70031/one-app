@@ -11,7 +11,7 @@ const jsonHeaders = {
 const actionKinds = [
   "reminder", "calendar", "email", "call", "maps", "share", "copy",
   "download", "search", "open_url", "sms", "whatsapp", "save",
-  "create_issue", "create_activity", "create_daily_report", "update_site_progress", "none",
+  "create_site", "create_issue", "create_activity", "create_daily_report", "update_site_progress",
 ];
 
 const actionPayloadProperties = {
@@ -35,6 +35,8 @@ const actionPayloadProperties = {
   mime: { type: ["string", "null"] },
   site_id: { type: ["string", "null"] },
   site_job_number: { type: ["string", "null"] },
+  site_name: { type: ["string", "null"] },
+  client: { type: ["string", "null"] },
   priority: { type: ["string", "null"] },
   status: { type: ["string", "null"] },
   details: { type: ["string", "null"] },
@@ -48,12 +50,54 @@ const actionPayloadProperties = {
   progress: { type: ["number", "null"] },
 };
 
+const walkthroughSchema = {
+  type: ["object", "null"],
+  additionalProperties: false,
+  required: ["summary", "works", "blockers", "workers", "hours", "suggested_progress", "activities", "issues"],
+  properties: {
+    summary: { type: ["string", "null"] },
+    works: { type: ["string", "null"] },
+    blockers: { type: ["string", "null"] },
+    workers: { type: ["number", "null"] },
+    hours: { type: ["number", "null"] },
+    suggested_progress: { type: ["number", "null"] },
+    activities: {
+      type: "array",
+      maxItems: 8,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["title", "notes"],
+        properties: {
+          title: { type: "string" },
+          notes: { type: ["string", "null"] },
+        },
+      },
+    },
+    issues: {
+      type: "array",
+      maxItems: 8,
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["title", "details", "priority", "due_at"],
+        properties: {
+          title: { type: "string" },
+          details: { type: ["string", "null"] },
+          priority: { type: "string", enum: ["Bassa", "Media", "Alta", "Critica"] },
+          due_at: { type: ["string", "null"] },
+        },
+      },
+    },
+  },
+};
+
 const resultSchema = {
   type: "object",
   additionalProperties: false,
-  required: ["summary", "intent", "memory_title", "memory_summary", "extracted", "actions"],
+  required: ["summary", "intent", "memory_title", "memory_summary", "extracted", "actions", "walkthrough"],
   properties: {
-    summary: { type: "string" },
+    summary: { type: "string", description: "Risposta completa da mostrare all'utente. Se viene richiesta una checklist, un testo o un piano, includi tutti i punti o il testo effettivo, non soltanto un annuncio come 'Checklist pronta'. Usa testo semplice e righe separate." },
     intent: { type: "string" },
     memory_title: { type: "string" },
     memory_summary: { type: "string" },
@@ -85,6 +129,7 @@ const resultSchema = {
         },
       },
     },
+    walkthrough: walkthroughSchema,
   },
 };
 
@@ -103,24 +148,19 @@ function outputText(payload: any) {
   return pieces.join("\n").trim();
 }
 
-function fallback(message: string, site: any, issues: any[], activities: any[], reports: any[]) {
-  const open = issues.filter((issue) => !["Risolto", "Chiusa", "Completata"].includes(issue.status));
-  const urgent = open.filter((issue) => ["Critica", "Alta"].includes(issue.priority));
-  const prefix = site
-    ? `${site.job_number} — ${site.name}: avanzamento ${site.progress || 0}%. `
-    : "";
-  const summary = `${prefix}${open.length} problemi aperti, ${urgent.length} ad alta priorità, ${activities.length} attività recenti${reports[0] ? `; ultimo report ${reports[0].report_date}` : ""}.`;
-  return {
-    summary,
-    intent: message,
-    memory_title: site ? `Aggiornamento ${site.job_number}` : "Richiesta a ONE",
-    memory_summary: summary,
-    extracted: [
-      { key: "open_issues", value: String(open.length) },
-      { key: "urgent_issues", value: String(urgent.length) },
-    ],
-    actions: [],
-  };
+function aiError(code: string, detail: string, status = 502) {
+  // Do not log prompts, attachments, credentials, or raw provider error bodies.
+  console.error(JSON.stringify({ event: "one_ai_error", code }));
+  return response({ error: code, detail }, status);
+}
+
+function providerError(status: number, code: string) {
+  if (code === "insufficient_quota") return aiError("insufficient_quota", "Credito API OpenAI non disponibile. Controlla il saldo dell'organizzazione collegata alla chiave.", 503);
+  if (status === 401) return aiError("invalid_api_key", "La chiave OpenAI configurata non è valida. Aggiorna OPENAI_API_KEY nelle impostazioni del backend.", 503);
+  if (status === 403) return aiError("permission_denied", "La chiave OpenAI non è autorizzata a usare questo modello o la Responses API.", 503);
+  if (code === "model_not_found") return aiError("model_not_found", "Il modello AI configurato non è disponibile per questo progetto OpenAI.", 503);
+  if (status === 429) return aiError("rate_limit", "Troppe richieste al motore AI. Attendi qualche secondo e riprova.", 429);
+  return aiError("provider_error", "OpenAI non ha completato la richiesta. Riprova tra poco.");
 }
 
 export default {
@@ -130,15 +170,23 @@ export default {
 
     const body = await req.json().catch(() => ({}));
     const message = String(body.text || body.message || "").trim();
+    const canCreateSite = Array.isArray(body.supported_actions) && body.supported_actions.includes("create_site");
+    const schema = structuredClone(resultSchema);
+    if (!canCreateSite) schema.properties.actions.items.properties.kind.enum = actionKinds.filter(kind => kind !== "create_site");
+    const mode = body.mode === "walkthrough" ? "walkthrough" : "assistant";
     const siteId = body.site_id ? String(body.site_id) : null;
     const image = typeof body.image === "string" ? body.image : null;
+    const images = Array.isArray(body.images)
+      ? body.images.filter((value: unknown) => typeof value === "string" && value.startsWith("data:image/")).slice(0, 6)
+      : [];
     const file = typeof body.file === "string" ? body.file : null;
     const filename = String(body.filename || "documento").slice(0, 160);
     const userId = ctx.userClaims?.id;
 
     if (!userId) return response({ error: "Utente non autenticato" }, 401);
-    if (!message && !image && !file) return response({ error: "Richiesta vuota" }, 400);
-    if ((image?.length || 0) > 14_000_000 || (file?.length || 0) > 14_000_000) {
+    if (!message && !image && !file && !images.length) return response({ error: "Richiesta vuota" }, 400);
+    const imageBytes = images.reduce((total: number, value: string) => total + value.length, image?.length || 0);
+    if (imageBytes > 28_000_000 || (file?.length || 0) > 14_000_000) {
       return response({ error: "Allegato troppo grande" }, 413);
     }
 
@@ -184,30 +232,48 @@ export default {
       text: `${message || "Analizza l'allegato."}\n\nCONTESTO ONE DISPONIBILE:\n${context}`,
     }];
     if (image) content.push({ type: "input_image", image_url: image, detail: "auto" });
+    for (const imageUrl of images) content.push({ type: "input_image", image_url: imageUrl, detail: "auto" });
     if (file) content.push({ type: "input_file", filename, file_data: file });
 
     let result: any = null;
     const openaiKey = Deno.env.get("OPENAI_API_KEY");
-    if (openaiKey) {
+    if (!openaiKey) return aiError("missing_api_key", "Il motore AI non è configurato: manca OPENAI_API_KEY nel backend.", 503);
+    try {
       const openaiResponse = await fetch("https://api.openai.com/v1/responses", {
         method: "POST",
+        signal: AbortSignal.timeout(60_000),
         headers: { "Authorization": `Bearer ${openaiKey}`, "Content-Type": "application/json" },
         body: JSON.stringify({
           model: "gpt-5.6-luna",
-          instructions: "Sei ONE, assistente operativo personale e aziendale. Rispondi in italiano, con tono sintetico e concreto. Usa solo i dati e gli allegati disponibili: non inventare persone, decisioni, scadenze o valori. Se l'utente vuole registrare qualcosa in un cantiere, proponi create_issue, create_activity, create_daily_report o update_site_progress. Usa site_id soltanto quando corrisponde senza ambiguità a un cantiere presente nel contesto; altrimenti lascialo null e valorizza site_job_number solo se esplicitamente indicato. Prepara sempre l'operazione per la revisione dell'utente e non dichiarare mai che sia già stata eseguita. Se proponi azioni esterne, prepara i dati ma non dichiarare mai che l'azione è stata eseguita. Nei cantieri evidenzia prima sicurezza, blocchi, responsabilità e scadenze. Restituisci al massimo quattro azioni utili.",
+          instructions: `Sei ONE, assistente generale personale e professionale. I cantieri sono soltanto uno dei moduli disponibili: non trasformare ogni richiesta in un'operazione di cantiere. Puoi creare direttamente contenuti utili come checklist, liste, lettere, email in bozza, piani di lavoro, tabelle, preventivi in bozza e codice. Distingui sempre la generazione di un contenuto dall'esecuzione di un'operazione su dati o servizi. Se viene richiesto un file testuale, puoi proporre download con content completo, filename ed estensione coerenti, e mime text/plain, text/markdown o text/csv; non dichiarare di aver creato PDF, Excel o allegati binari non disponibili. Per servizi esterni prepara bozze o usa esclusivamente le azioni collegate: non inventare integrazioni. Usa i cantieri nel contesto solo quando sono pertinenti alla richiesta. Rispondi in italiano, con tono concreto. Soddisfa direttamente la richiesta nel campo summary: scrivi la checklist completa, la bozza o il piano richiesto con punti numerati su righe separate. Non limitarti a dire che è pronto e non nascondere il contenuto soltanto in extracted o nelle azioni. memory_title e memory_summary sono invece brevi etichette per Recall; il salvataggio in Recall è facoltativo e distinto dalla risposta. Per checklist e modelli generali puoi usare conoscenze generali, specificando cosa va verificato sul posto. Per affermazioni su uno specifico cantiere usa solo i dati e gli allegati disponibili: non inventare persone, decisioni, scadenze o valori. Se l'utente vuole registrare qualcosa in un cantiere, proponi create_issue, create_activity, create_daily_report o update_site_progress. Usa site_id soltanto quando corrisponde senza ambiguità a un cantiere presente nel contesto; altrimenti lascialo null e valorizza site_job_number solo se esplicitamente indicato. ${canCreateSite ? "Se l'utente chiede di creare un NUOVO cantiere, proponi create_site con site_job_number per la commessa, site_name per il nome, client, address e notes soltanto se forniti; site_id deve essere null. Anche se il portfolio è vuoto puoi creare il primo cantiere. I campi mancanti vengono completati nella schermata di revisione. Non rispondere che creare cantieri è impossibile." : "Questa versione del client non supporta create_site: se l'utente chiede un nuovo cantiere, spiega che deve aggiornare ONE per usare la creazione guidata."} Prepara sempre l'operazione per la revisione dell'utente e non dichiarare mai che sia già stata eseguita. Nei cantieri evidenzia prima sicurezza, blocchi, responsabilità e scadenze. Se mode è walkthrough, compila walkthrough come bozza completa del sopralluogo: separa lavorazioni svolte, blocchi, attività e criticità; non trasformare la stessa osservazione sia in attività sia in criticità; usa suggested_progress solo se gli elementi osservati giustificano concretamente la variazione, altrimenti null; usa null per persone, ore e scadenze non dichiarate; lascia actions vuoto. Se mode non è walkthrough, imposta walkthrough a null. Mode corrente: ${mode}. Restituisci al massimo quattro azioni utili e realmente eseguibili. Quando non ci sono azioni, restituisci actions vuoto: non proporre pulsanti none o non disponibili.`,
           input: [{ role: "user", content }],
-          max_output_tokens: 1200,
-          text: { format: { type: "json_schema", name: "one_result", strict: true, schema: resultSchema } },
+          max_output_tokens: mode === "walkthrough" ? 6000 : 4000,
+          text: { format: { type: "json_schema", name: "one_result", strict: true, schema } },
         }),
       });
-      if (openaiResponse.ok) {
-        const payload = await openaiResponse.json();
-        const text = outputText(payload);
-        if (text) result = JSON.parse(text);
+      const payload = await openaiResponse.json().catch(() => null);
+      if (!openaiResponse.ok) return providerError(openaiResponse.status, payload?.error?.code || "");
+      if (payload?.status === "incomplete") return aiError("incomplete_response", "La risposta AI è stata interrotta. Prova a chiedere una checklist più breve.");
+      if (payload?.status === "failed" || payload?.error) return aiError("provider_error", "OpenAI non ha completato la richiesta. Riprova tra poco.");
+      if (payload?.output?.some((item: any) => item.content?.some((part: any) => part.type === "refusal"))) {
+        return aiError("request_refused", "Il motore AI non può soddisfare questa richiesta. Prova a riformularla.", 422);
       }
+      const text = outputText(payload);
+      try { result = JSON.parse(text); } catch {
+        return aiError("invalid_response", "Il motore AI ha restituito una risposta illeggibile. Riprova.");
+      }
+      if (!result || typeof result.summary !== "string" || !result.summary.trim() || !Array.isArray(result.actions)) {
+        return aiError("invalid_response", "Il motore AI ha restituito una risposta vuota o non valida. Riprova.");
+      }
+      if (mode === "walkthrough" && (!result.walkthrough || typeof result.walkthrough !== "object")) {
+        return aiError("invalid_response", "La bozza del sopralluogo è incompleta. Riprova.");
+      }
+    } catch (error) {
+      const timedOut = error instanceof Error && ["TimeoutError", "AbortError"].includes(error.name);
+      return aiError(timedOut ? "ai_timeout" : "ai_unreachable", timedOut
+        ? "Il motore AI sta impiegando troppo tempo. Riprova con una richiesta più breve."
+        : "Non riesco a raggiungere OpenAI. Riprova tra poco.");
     }
-
-    if (!result) result = fallback(message, siteId ? site : null, issues, activities, reports);
 
     await ctx.supabase.from("ai_messages").insert({
       site_id: siteId,
