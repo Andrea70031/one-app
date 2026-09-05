@@ -19,7 +19,8 @@
     if (result.memory_title) return String(result.memory_title).trim();
     if (result.title) return String(result.title).trim();
     const firstPlain = String(result.summary || "").split(/\r?\n/).map(x => x.trim()).find(line => line && !/^\s*(?:[-*•]|\d+[.)]|\[[ xX]\]|☐|✅)/.test(line));
-    return (firstPlain && firstPlain.length <= 120 ? firstPlain.replace(/^#+\s*/, "") : "Checklist ONE") || (items.length ? "Checklist ONE" : "Risposta ONE");
+    if (firstPlain && firstPlain.length <= 120) return firstPlain.replace(/^#+\s*/, "");
+    return items.length ? "Checklist ONE" : "Risposta ONE";
   }
 
   function safeFilename(value = "one") {
@@ -104,7 +105,7 @@
       const pageObj = 5 + i * 2;
       const contentObj = pageObj + 1;
       pageRefs.push(`${pageObj} 0 R`);
-      const commands = ["q", "1 1 1 rg"];
+      const commands = ["q", "0 0 0 rg"];
       for (const line of lines) {
         commands.push("BT", `/${line.bold ? "F2" : "F1"} ${line.size} Tf`, `${line.x} ${line.y} Td`, `(${pdfEscape(line.text)}) Tj`, "ET");
       }
