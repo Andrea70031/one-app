@@ -95,5 +95,15 @@
     }
   };
 
+  const loadProductEnhancements = () => {
+    if (document.querySelector('script[data-one-enhancements="checklist"]')) return;
+    const script = document.createElement("script");
+    script.src = "checklist-enhancements.js?v=1";
+    script.defer = true;
+    script.dataset.oneEnhancements = "checklist";
+    document.head.appendChild(script);
+  };
+
   finishAuthReturn();
+  loadProductEnhancements();
 })();
