@@ -95,13 +95,28 @@
     }
   };
 
-  const loadProductEnhancements = () => {
-    if (document.querySelector('script[data-one-enhancements="checklist"]')) return;
+  const ensureStylesheet = (href, key) => {
+    if (document.querySelector(`link[data-one-enhancements="${key}"]`)) return;
+    const link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = href;
+    link.dataset.oneEnhancements = key;
+    document.head.appendChild(link);
+  };
+
+  const ensureScript = (src, key) => {
+    if (document.querySelector(`script[data-one-enhancements="${key}"]`)) return;
     const script = document.createElement("script");
-    script.src = "checklist-enhancements.js?v=1";
+    script.src = src;
     script.defer = true;
-    script.dataset.oneEnhancements = "checklist";
+    script.dataset.oneEnhancements = key;
     document.head.appendChild(script);
+  };
+
+  const loadProductEnhancements = () => {
+    ensureScript("checklist-enhancements.js?v=1", "checklist");
+    ensureStylesheet("integrations-enhancements.css?v=1", "integrations-style");
+    ensureScript("integrations-enhancements.js?v=1", "integrations");
   };
 
   finishAuthReturn();
