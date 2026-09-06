@@ -117,6 +117,8 @@
     // Keep the original ONE orb from styles.css. The later Supernova override
     // produced rendering artefacts on iOS and is intentionally no longer loaded.
     ensureStylesheet("pwa-mobile-fix.css?v=1", "mobile-layout-fix");
+    ensureStylesheet("deletion-enhancements.css?v=1", "deletion-style");
+    ensureScript("deletion-enhancements.js?v=1", "deletion-actions");
     ensureScript("checklist-enhancements.js?v=1", "checklist");
     ensureStylesheet("integrations-enhancements.css?v=1", "integrations-style");
     ensureScript("integrations-enhancements.js?v=1", "integrations");

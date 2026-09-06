@@ -1,15 +1,17 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AppErrorBoundary } from './src/components/AppErrorBoundary';
 import { NativeAuthScreen } from './src/components/NativeAuthScreen';
 import { OneAuthProvider, useOneAuth } from './src/native/auth';
+import { NativeDeletionManager } from './src/native/NativeDeletionManager';
 import { NativeHome } from './src/native/NativeHome';
 import { colors } from './src/theme/colors';
 
 function Root() {
   const { loading, session } = useOneAuth();
+  const [dataRevision, setDataRevision] = useState(0);
 
   if (loading) {
     return (
@@ -24,7 +26,12 @@ function Root() {
   }
 
   if (!session) return <NativeAuthScreen />;
-  return <NativeHome />;
+  return (
+    <View style={{ flex: 1 }}>
+      <NativeHome key={dataRevision} />
+      <NativeDeletionManager onChanged={() => setDataRevision((value) => value + 1)} />
+    </View>
+  );
 }
 
 export default function App() {
