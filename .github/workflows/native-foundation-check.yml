@@ -1,9 +1,9 @@
-name: ONE Native Foundation Check
+name: ONE Native Check
 
 on:
   push:
     branches:
-      - codex/one-native-foundation
+      - 'codex/one-native-*'
   pull_request:
     branches:
       - main
