@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
   handle: { width: 42, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.18)', alignSelf: 'center', marginBottom: 14 },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   eyebrow: { color: colors.cyan, fontSize: 10, fontWeight: '700', letterSpacing: 1.8 },
-  title: { marginTop: 4, color: colors.text, fontSize: 24, fontWeight: '650' },
+  title: { marginTop: 4, color: colors.text, fontSize: 24, fontWeight: '600' },
   closeButton: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   segmented: { marginTop: 18, flexDirection: 'row', padding: 4, borderRadius: 16, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   segment: { flex: 1, minHeight: 38, alignItems: 'center', justifyContent: 'center', borderRadius: 12 },
