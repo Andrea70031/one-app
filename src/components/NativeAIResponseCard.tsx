@@ -1,8 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { OneAIResult } from '../native/oneAI';
-import { nativeActionsFromAI } from '../native/aiActionAdapter';
+import { nativeActionFromAI } from '../native/aiActionAdapter';
 import { executeCoordinatedAction } from '../native/oneActionCoordinator';
 import { saveOneMemory } from '../native/oneData';
 import { colors } from '../theme/colors';
@@ -16,7 +16,6 @@ type Props = {
 export function NativeAIResponseCard({ result, userId, onChanged }: Props) {
   const [busy, setBusy] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
-  const executable = useMemo(() => nativeActionsFromAI(result.actions), [result.actions]);
 
   const saveRecall = async () => {
     if (saved) return;
@@ -39,8 +38,9 @@ export function NativeAIResponseCard({ result, userId, onChanged }: Props) {
 
   const run = (index: number) => {
     const source = result.actions[index];
-    const native = executable.find((item) => item.label === source?.label && item.kind === source?.kind);
+    const native = source ? nativeActionFromAI(source) : null;
     if (!source || !native) return;
+
     Alert.alert(
       native.label || 'Esegui azione',
       'ONE eseguirà questa azione sul dispositivo. Vuoi continuare?',
@@ -78,8 +78,8 @@ export function NativeAIResponseCard({ result, userId, onChanged }: Props) {
           <Text style={styles.secondaryText}>{saved ? 'Salvato in Recall' : 'Salva in Recall'}</Text>
         </Pressable>
         {result.actions.map((action, index) => {
-          const supported = Boolean(nativeActionsFromAI([action]).length);
-          if (!supported) return null;
+          const native = nativeActionFromAI(action);
+          if (!native) return null;
           return (
             <Pressable key={`${action.label}-${index}`} style={styles.secondary} onPress={() => run(index)} disabled={busy === `action-${index}`}>
               <Ionicons name="flash-outline" size={16} color={colors.text} />
