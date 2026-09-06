@@ -8,7 +8,12 @@
     "backgroundColor": "#05070B",
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.one.assistant"
+      "bundleIdentifier": "com.one.assistant",
+      "infoPlist": {
+        "LSApplicationQueriesSchemes": [
+          "shortcuts"
+        ]
+      }
     },
     "android": {
       "package": "com.one.assistant",
@@ -33,6 +38,15 @@
         {
           "microphonePermission": "ONE usa il microfono solo quando scegli di parlare con l'assistente.",
           "enableBackgroundRecording": false
+        }
+      ],
+      [
+        "expo-calendar",
+        {
+          "calendarPermission": "ONE usa il Calendario solo quando scegli di preparare o gestire un evento.",
+          "remindersPermission": "ONE usa i Promemoria solo quando scegli di creare o gestire un promemoria.",
+          "writeOnlyCalendarPermission": "ONE può aggiungere un evento al tuo Calendario quando glielo chiedi.",
+          "writeOnlyAccess": true
         }
       ]
     ]
