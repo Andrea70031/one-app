@@ -45,10 +45,10 @@ export type NativeDashboard = {
 
 export async function loadNativeDashboard(userId: string): Promise<NativeDashboard> {
   const [activities, reminders, memories, sites] = await Promise.all([
-    supabase.from('one_activities').select('id,title,detail,type,icon,created_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(12),
-    supabase.from('one_reminders').select('id,title,note,due_at,completed,source').eq('user_id', userId).order('created_at', { ascending: false }).limit(30),
-    supabase.from('one_memories').select('id,title,summary,kind,created_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(12),
-    supabase.from('sites').select('id,job_number,name,client,status,progress').order('updated_at', { ascending: false }).limit(40),
+    supabase.from('one_activities').select('id,title,detail,type,icon,created_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(20),
+    supabase.from('one_reminders').select('id,title,note,due_at,completed,source').eq('user_id', userId).order('created_at', { ascending: false }).limit(120),
+    supabase.from('one_memories').select('id,title,summary,kind,created_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(120),
+    supabase.from('sites').select('id,job_number,name,client,status,progress').order('updated_at', { ascending: false }).limit(100),
   ]);
 
   const firstError = activities.error || reminders.error || memories.error || sites.error;
@@ -129,6 +129,15 @@ export async function mirrorReminder(userId: string, payload: Record<string, unk
     completed: false,
     source: { kind: 'native', created_by: 'one_action_engine' },
   });
+  if (error) throw error;
+}
+
+export async function setReminderCompleted(userId: string, reminderId: string, completed: boolean) {
+  const { error } = await supabase
+    .from('one_reminders')
+    .update({ completed })
+    .eq('id', reminderId)
+    .eq('user_id', userId);
   if (error) throw error;
 }
 
