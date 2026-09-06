@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import type { RecentItem } from '../data/recent';
+import { syncOneNotifications } from './notifications';
 
 export type OneReminder = {
   id: string;
@@ -54,12 +55,15 @@ export async function loadNativeDashboard(userId: string): Promise<NativeDashboa
   const firstError = activities.error || reminders.error || memories.error || sites.error;
   if (firstError) throw firstError;
 
-  return {
+  const dashboard: NativeDashboard = {
     activities: (activities.data || []) as OneActivity[],
     reminders: (reminders.data || []) as OneReminder[],
     memories: (memories.data || []) as OneMemory[],
     sites: (sites.data || []) as OneSite[],
   };
+
+  void syncOneNotifications(dashboard.reminders);
+  return dashboard;
 }
 
 function activityIcon(type: string): RecentItem['icon'] {

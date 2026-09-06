@@ -2,6 +2,7 @@ import React from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
+import { AppErrorBoundary } from './src/components/AppErrorBoundary';
 import { NativeAuthScreen } from './src/components/NativeAuthScreen';
 import { OneAuthProvider, useOneAuth } from './src/native/auth';
 import { NativeHome } from './src/native/NativeHome';
@@ -28,9 +29,11 @@ function Root() {
 
 export default function App() {
   return (
-    <OneAuthProvider>
-      <Root />
-    </OneAuthProvider>
+    <AppErrorBoundary>
+      <OneAuthProvider>
+        <Root />
+      </OneAuthProvider>
+    </AppErrorBoundary>
   );
 }
 

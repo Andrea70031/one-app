@@ -149,7 +149,6 @@ function outputText(payload: any) {
 }
 
 function aiError(code: string, detail: string, status = 502) {
-  // Do not log prompts, attachments, credentials, or raw provider error bodies.
   console.error(JSON.stringify({ event: "one_ai_error", code }));
   return response({ error: code, detail }, status);
 }
@@ -161,6 +160,15 @@ function providerError(status: number, code: string) {
   if (code === "model_not_found") return aiError("model_not_found", "Il modello AI configurato non è disponibile per questo progetto OpenAI.", 503);
   if (status === 429) return aiError("rate_limit", "Troppe richieste al motore AI. Attendi qualche secondo e riprova.", 429);
   return aiError("provider_error", "OpenAI non ha completato la richiesta. Riprova tra poco.");
+}
+
+async function allowed(ctx: any, bucket: string, limit: number, seconds: number) {
+  const { data, error } = await ctx.supabase.rpc("consume_one_rate_limit", {
+    p_bucket: bucket,
+    p_limit: limit,
+    p_window_seconds: seconds,
+  });
+  return !error && data === true;
 }
 
 export default {
@@ -188,6 +196,10 @@ export default {
     const imageBytes = images.reduce((total: number, value: string) => total + value.length, image?.length || 0);
     if (imageBytes > 28_000_000 || (file?.length || 0) > 14_000_000) {
       return response({ error: "Allegato troppo grande" }, 413);
+    }
+
+    if (!(await allowed(ctx, "ai_minute", 15, 60)) || !(await allowed(ctx, "ai_day", 100, 86400))) {
+      return response({ error: "rate_limit", detail: "Hai raggiunto il limite temporaneo di richieste ONE. Riprova più tardi." }, 429);
     }
 
     let site: any = null;
