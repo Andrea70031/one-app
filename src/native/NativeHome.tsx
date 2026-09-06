@@ -24,6 +24,7 @@ import {
 } from 'expo-audio';
 
 import { OneOrb, OrbState } from '../components/OneOrb';
+import { EnergyOrb } from '../components/EnergyOrb';
 import { RecentActivity } from '../components/RecentActivity';
 import { CaptureItem, CapturePreview } from '../components/CapturePreview';
 import { NativeAIResponseCard } from '../components/NativeAIResponseCard';
@@ -266,9 +267,13 @@ export function NativeHome() {
         <View style={styles.bottomNav}>
           <NavItem icon="home-outline" active />
           <NavItem icon="layers-outline" />
-          <Pressable onPress={() => setOrbState('activating')} style={styles.navOrbWrap}>
-            <LinearGradient colors={[colors.cyan, colors.blue, colors.violet, colors.pink]} style={styles.navOrb}><View style={styles.navOrbInner} /></LinearGradient>
-          </Pressable>
+          <EnergyOrb
+            state={orbState}
+            size={64}
+            compact
+            onPress={() => setOrbState('activating')}
+            accessibilityLabel="Attiva ONE"
+          />
           <NavItem icon="search-outline" />
           <NavItem icon="person-outline" />
         </View>
@@ -327,9 +332,6 @@ const styles = StyleSheet.create({
   memoryInner: { flex: 1, borderRadius: 21, backgroundColor: '#080C12' },
   memoryTitle: { color: colors.text, fontSize: 14.5, fontWeight: '600' },
   memoryCopy: { marginTop: 4, color: colors.textMuted, fontSize: 12.5, lineHeight: 18 },
-  bottomNav: { position: 'absolute', bottom: 14, left: 20, right: 20, height: 68, borderRadius: 34, backgroundColor: 'rgba(12,16,23,0.94)', borderWidth: 1, borderColor: colors.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', shadowColor: '#000', shadowOpacity: 0.4, shadowRadius: 20, shadowOffset: { width: 0, height: 8 } },
+  bottomNav: { position: 'absolute', bottom: 14, left: 20, right: 20, height: 70, borderRadius: 35, backgroundColor: 'rgba(12,16,23,0.94)', borderWidth: 1, borderColor: colors.border, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around', overflow: 'visible', shadowColor: '#000', shadowOpacity: 0.4, shadowRadius: 20, shadowOffset: { width: 0, height: 8 } },
   navItem: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  navOrbWrap: { width: 58, height: 58 },
-  navOrb: { flex: 1, borderRadius: 29, padding: 4 },
-  navOrbInner: { flex: 1, borderRadius: 25, backgroundColor: '#06090E' },
 });
