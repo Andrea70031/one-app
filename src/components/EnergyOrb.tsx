@@ -170,8 +170,10 @@ export function EnergyOrb({
   const rippleOpacity = ripple.interpolate({ inputRange: [0, 0.72, 1], outputRange: [0.4, 0.12, 0] });
   const driftX = pulse.interpolate({ inputRange: [0, 1], outputRange: [-8, 9] });
   const driftY = pulse.interpolate({ inputRange: [0, 1], outputRange: [6, -7] });
+  const driftXReverse = pulse.interpolate({ inputRange: [0, 1], outputRange: [5.6, -6.3] });
+  const driftYReverse = pulse.interpolate({ inputRange: [0, 1], outputRange: [-3.9, 4.55] });
 
-  const coreSize = compact ? size * 0.78 : size * 0.78;
+  const coreSize = size * 0.78;
   const ringPadding = compact ? 3 : 5;
   const cutoutPadding = compact ? 5 : 10;
   const orbitOneWidth = compact ? size * 0.94 : size * 1.02;
@@ -218,10 +220,7 @@ export function EnergyOrb({
 
       <Animated.View
         pointerEvents="none"
-        style={[
-          styles.orbitLayer,
-          { width: size, height: size, transform: [{ rotate: orbitRotation }] },
-        ]}
+        style={[styles.orbitLayer, { width: size, height: size, transform: [{ rotate: orbitRotation }] }]}
       >
         <View
           style={[
@@ -243,10 +242,7 @@ export function EnergyOrb({
 
       <Animated.View
         pointerEvents="none"
-        style={[
-          styles.orbitLayer,
-          { width: size, height: size, transform: [{ rotate: orbitReverseRotation }] },
-        ]}
+        style={[styles.orbitLayer, { width: size, height: size, transform: [{ rotate: orbitReverseRotation }] }]}
       >
         <View
           style={[
@@ -277,12 +273,11 @@ export function EnergyOrb({
             left: (size - coreSize) / 2,
             top: (size - coreSize) / 2,
             opacity: shimmerOpacity,
-            transform: [{ rotate: primaryRotation }],
           },
         ]}
       />
 
-      <Animated.View
+      <View
         style={[
           styles.core,
           {
@@ -291,7 +286,6 @@ export function EnergyOrb({
             borderRadius: coreSize / 2,
             left: (size - coreSize) / 2,
             top: (size - coreSize) / 2,
-            transform: [{ rotate: primaryRotation }],
           },
         ]}
       >
@@ -347,8 +341,8 @@ export function EnergyOrb({
                     opacity: shimmerOpacity,
                     transform: [
                       { rotate: primaryRotation },
-                      { translateX: Animated.multiply(driftX, -0.7) },
-                      { translateY: Animated.multiply(driftY, -0.65) },
+                      { translateX: driftXReverse },
+                      { translateY: driftYReverse },
                     ],
                   },
                 ]}
@@ -368,8 +362,8 @@ export function EnergyOrb({
                     style={[
                       styles.particle,
                       {
-                        left: `${particle.left}%`,
-                        top: `${particle.top}%`,
+                        left: `${particle.left}%` as `${number}%`,
+                        top: `${particle.top}%` as `${number}%`,
                         width: particle.size,
                         height: particle.size,
                         opacity: particle.opacity,
@@ -382,24 +376,22 @@ export function EnergyOrb({
               {!compact && state === 'listening' && <ListeningWave pulse={pulse} size={coreSize} />}
 
               {label ? (
-                <Animated.View style={{ transform: [{ rotate: secondaryRotation }] }}>
-                  <Text
-                    style={[
-                      styles.label,
-                      { fontSize: compact ? 10 : state === 'done' ? 44 : 24, letterSpacing: compact ? 5 : 12 },
-                      state === 'done' && { color: colors.green },
-                    ]}
-                  >
-                    {label}
-                  </Text>
-                </Animated.View>
+                <Text
+                  style={[
+                    styles.label,
+                    { fontSize: compact ? 10 : state === 'done' ? 44 : 24, letterSpacing: compact ? 5 : 12 },
+                    state === 'done' && { color: colors.green },
+                  ]}
+                >
+                  {label}
+                </Text>
               ) : (
                 <View style={[styles.darkCore, { width: coreSize * 0.52, height: coreSize * 0.52, borderRadius: coreSize * 0.28 }]} />
               )}
             </View>
           </View>
         </LinearGradient>
-      </Animated.View>
+      </View>
     </Animated.View>
   );
 
