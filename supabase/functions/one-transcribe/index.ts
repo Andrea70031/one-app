@@ -19,10 +19,24 @@ function dataUrlToBlob(dataUrl: string) {
   return { blob: new Blob([bytes], { type: mime }), mime };
 }
 
+async function allowed(ctx: any, bucket: string, limit: number, seconds: number) {
+  const { data, error } = await ctx.supabase.rpc("consume_one_rate_limit", {
+    p_bucket: bucket,
+    p_limit: limit,
+    p_window_seconds: seconds,
+  });
+  return !error && data === true;
+}
+
 export default {
-  fetch: withSupabase({ auth: "user" }, async (req) => {
+  fetch: withSupabase({ auth: "user" }, async (req, ctx) => {
     if (req.method === "OPTIONS") return new Response("ok", { headers });
     if (req.method !== "POST") return response({ error: "Metodo non consentito" }, 405);
+    if (!ctx.userClaims?.id) return response({ error: "Utente non autenticato" }, 401);
+
+    if (!(await allowed(ctx, "voice_minute", 12, 60)) || !(await allowed(ctx, "voice_day", 100, 86400))) {
+      return response({ error: "Limite voce raggiunto. Riprova più tardi." }, 429);
+    }
 
     const body = await req.json().catch(() => ({}));
     const audio = typeof body.audio === "string" ? body.audio : "";
@@ -41,6 +55,7 @@ export default {
 
     const openaiResponse = await fetch("https://api.openai.com/v1/audio/transcriptions", {
       method: "POST",
+      signal: AbortSignal.timeout(60_000),
       headers: { "Authorization": `Bearer ${apiKey}` },
       body: form,
     });
@@ -49,4 +64,3 @@ export default {
     return response({ ok: true, text: payload.text || "" });
   }),
 };
-
