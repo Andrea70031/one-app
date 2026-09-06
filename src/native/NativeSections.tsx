@@ -101,6 +101,11 @@ export function NativeSpacesScreen(props: SharedProps) {
     );
   }, [props.dashboard.sites, query]);
 
+  const averageProgress = Math.round(
+    props.dashboard.sites.reduce((sum, site) => sum + (Number(site.progress) || 0), 0) /
+      Math.max(props.dashboard.sites.length, 1),
+  );
+
   return (
     <ScreenFrame {...props}>
       <ScreenTitle eyebrow="SPAZI" title="I tuoi spazi di lavoro" subtitle="Cantieri, commesse e progetti restano separati ma accessibili a ONE." />
@@ -109,7 +114,7 @@ export function NativeSpacesScreen(props: SharedProps) {
       <View style={styles.summaryRow}>
         <SummaryMetric value={String(props.dashboard.sites.length)} label="Totali" />
         <SummaryMetric value={String(props.dashboard.sites.filter((site) => site.status.toLowerCase() !== 'chiuso').length)} label="Attivi" />
-        <SummaryMetric value={`${Math.round(props.dashboard.sites.reduce((sum, site) => sum + (Number(site.progress) || 0), 0) / Math.max(props.dashboard.sites.length, 1))}%`} label="Media" />
+        <SummaryMetric value={`${averageProgress}%`} label="Media" />
       </View>
 
       <View style={styles.listBlock}>
@@ -156,16 +161,18 @@ export function NativeRecallScreen(props: SharedProps & { onOpenReminders: () =>
     );
   }, [props.dashboard.memories, query]);
 
+  const openReminders = props.dashboard.reminders.filter((item) => !item.completed).length;
+
   return (
     <ScreenFrame {...props}>
-      <ScreenTitle eyebrow="RECALL" title="La memoria privata di ONE" subtitle="Cerca ciò che ONE ha salvato per te e riporta subito alla luce il contesto che serve." />
+      <ScreenTitle eyebrow="RECALL" title="La memoria privata di ONE" subtitle="Cerca ciò che ONE ha salvato per te e recupera subito il contesto che serve." />
       <SearchBox value={query} onChangeText={setQuery} placeholder="Cerca nella tua memoria…" />
 
       <Pressable style={styles.linkCard} onPress={props.onOpenReminders}>
         <View style={styles.linkIcon}><Ionicons name="checkmark-done-outline" size={20} color={colors.green} /></View>
         <View style={{ flex: 1 }}>
           <Text style={styles.linkTitle}>Promemoria</Text>
-          <Text style={styles.linkCopy}>{props.dashboard.reminders.filter((item) => !item.completed).length} ancora aperti</Text>
+          <Text style={styles.linkCopy}>{openReminders} ancora aperti</Text>
         </View>
         <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
       </Pressable>
@@ -194,7 +201,10 @@ export function NativeRecallScreen(props: SharedProps & { onOpenReminders: () =>
 export function NativeRemindersScreen(props: ReminderProps) {
   const [mode, setMode] = useState<'open' | 'done'>('open');
   const [busyId, setBusyId] = useState<string | null>(null);
-  const reminders = useMemo(() => props.dashboard.reminders.filter((item) => mode === 'open' ? !item.completed : item.completed), [mode, props.dashboard.reminders]);
+  const reminders = useMemo(
+    () => props.dashboard.reminders.filter((item) => mode === 'open' ? !item.completed : item.completed),
+    [mode, props.dashboard.reminders],
+  );
 
   const toggle = async (reminder: OneReminder) => {
     if (busyId) return;
@@ -315,20 +325,20 @@ const styles = StyleSheet.create({
   screenContent: { paddingHorizontal: 20, paddingTop: 18 },
   titleBlock: { marginBottom: 18 },
   eyebrow: { color: colors.cyan, fontSize: 10, letterSpacing: 1.7, fontWeight: '800' },
-  title: { color: colors.text, fontSize: 27, lineHeight: 34, fontWeight: '650', marginTop: 8 },
+  title: { color: colors.text, fontSize: 27, lineHeight: 34, fontWeight: '600', marginTop: 8 },
   subtitle: { color: colors.textMuted, fontSize: 14, lineHeight: 21, marginTop: 7, maxWidth: 360 },
   searchBox: { height: 50, borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 9 },
   searchInput: { flex: 1, color: colors.text, fontSize: 14 },
   summaryRow: { flexDirection: 'row', gap: 8, marginTop: 14 },
   summaryMetric: { flex: 1, minHeight: 68, borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center' },
-  summaryValue: { color: colors.text, fontSize: 20, fontWeight: '750' },
+  summaryValue: { color: colors.text, fontSize: 20, fontWeight: '700' },
   summaryLabel: { color: colors.textMuted, fontSize: 10.5, marginTop: 3 },
   listBlock: { marginTop: 16, gap: 10 },
   siteCard: { borderRadius: 22, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 15 },
   siteTopRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   siteIcon: { width: 42, height: 42, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(66,232,224,0.09)' },
   siteJob: { color: colors.cyan, fontSize: 10, fontWeight: '800', letterSpacing: 0.8 },
-  siteName: { color: colors.text, fontSize: 15, fontWeight: '650', marginTop: 2 },
+  siteName: { color: colors.text, fontSize: 15, fontWeight: '600', marginTop: 2 },
   siteClient: { color: colors.textMuted, fontSize: 12, marginTop: 3 },
   progressTrack: { height: 5, borderRadius: 99, backgroundColor: 'rgba(255,255,255,0.07)', overflow: 'hidden', marginTop: 14 },
   progressFill: { height: '100%', borderRadius: 99, backgroundColor: colors.cyan },
@@ -337,18 +347,18 @@ const styles = StyleSheet.create({
   metaAccent: { color: colors.cyan, fontSize: 10.5, fontWeight: '700' },
   linkCard: { marginTop: 14, borderRadius: 20, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12 },
   linkIcon: { width: 42, height: 42, borderRadius: 14, backgroundColor: 'rgba(70,227,183,0.10)', alignItems: 'center', justifyContent: 'center' },
-  linkTitle: { color: colors.text, fontSize: 14.5, fontWeight: '650' },
+  linkTitle: { color: colors.text, fontSize: 14.5, fontWeight: '600' },
   linkCopy: { color: colors.textMuted, fontSize: 12, marginTop: 3 },
   memoryRow: { borderRadius: 20, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 14, flexDirection: 'row', gap: 12 },
   memoryDotOuter: { width: 36, height: 36, borderRadius: 18, padding: 2 },
   memoryDotInner: { flex: 1, borderRadius: 16, backgroundColor: '#080C12' },
-  rowTitle: { color: colors.text, fontSize: 14, fontWeight: '650' },
+  rowTitle: { color: colors.text, fontSize: 14, fontWeight: '600' },
   rowCopy: { color: colors.textMuted, fontSize: 12, lineHeight: 18, marginTop: 4 },
   rowMetaLine: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 },
   segmented: { flexDirection: 'row', borderRadius: 18, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 4, gap: 4 },
   segment: { flex: 1, minHeight: 40, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   segmentActive: { backgroundColor: 'rgba(66,232,224,0.11)', borderWidth: 1, borderColor: 'rgba(66,232,224,0.22)' },
-  segmentText: { color: colors.textMuted, fontSize: 11.5, fontWeight: '650' },
+  segmentText: { color: colors.textMuted, fontSize: 11.5, fontWeight: '600' },
   segmentTextActive: { color: colors.cyan },
   reminderRow: { borderRadius: 20, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, padding: 14, flexDirection: 'row', gap: 12, alignItems: 'flex-start' },
   checkCircle: { width: 24, height: 24, borderRadius: 12, borderWidth: 1.5, borderColor: colors.borderStrong, alignItems: 'center', justifyContent: 'center', marginTop: 1 },
@@ -366,10 +376,10 @@ const styles = StyleSheet.create({
   settingsIcon: { width: 38, height: 38, borderRadius: 13, backgroundColor: 'rgba(66,232,224,0.08)', alignItems: 'center', justifyContent: 'center' },
   comingSoon: { color: colors.textMuted, fontSize: 9, fontWeight: '800', letterSpacing: 0.7 },
   signOutButton: { marginTop: 16, minHeight: 54, borderRadius: 18, borderWidth: 1, borderColor: 'rgba(255,141,156,0.22)', backgroundColor: 'rgba(255,141,156,0.06)', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9 },
-  signOutText: { color: '#FF8D9C', fontSize: 13.5, fontWeight: '650' },
+  signOutText: { color: '#FF8D9C', fontSize: 13.5, fontWeight: '600' },
   emptyState: { minHeight: 170, borderRadius: 22, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', padding: 24 },
   emptyIcon: { width: 48, height: 48, borderRadius: 16, backgroundColor: 'rgba(66,232,224,0.08)', alignItems: 'center', justifyContent: 'center' },
-  emptyTitle: { color: colors.text, fontSize: 15, fontWeight: '650', marginTop: 12 },
+  emptyTitle: { color: colors.text, fontSize: 15, fontWeight: '600', marginTop: 12 },
   emptyCopy: { color: colors.textMuted, fontSize: 12, lineHeight: 18, textAlign: 'center', marginTop: 5 },
   pressed: { opacity: 0.72 },
 });
