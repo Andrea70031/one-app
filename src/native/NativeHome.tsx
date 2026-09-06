@@ -32,6 +32,13 @@ import { colors } from '../theme/colors';
 import { useOneAuth } from './auth';
 import { askOneNative, OneAIResult } from './oneAI';
 import { addOneActivity, dashboardRecentItems, loadNativeDashboard, NativeDashboard } from './oneData';
+import {
+  NativeAccountScreen,
+  NativeRecallScreen,
+  NativeRemindersScreen,
+  NativeSection,
+  NativeSpacesScreen,
+} from './NativeSections';
 
 const stateSequence: OrbState[] = ['idle', 'activating', 'listening', 'thinking', 'done'];
 const emptyDashboard: NativeDashboard = { activities: [], reminders: [], memories: [], sites: [] };
@@ -43,6 +50,7 @@ function captureId(prefix: string) {
 
 export function NativeHome() {
   const { user, profile, signOut } = useOneAuth();
+  const [section, setSection] = useState<NativeSection>('home');
   const [orbState, setOrbState] = useState<OrbState>('idle');
   const [input, setInput] = useState('');
   const [captures, setCaptures] = useState<CaptureItem[]>([]);
@@ -245,8 +253,19 @@ export function NativeHome() {
     ]);
   };
 
+  const openOne = () => {
+    setSection('home');
+    setOrbState('activating');
+  };
+
   const composerAction = isRecording ? toggleRecording : hasDraft ? submitRequest : toggleRecording;
   const composerIcon: keyof typeof Ionicons.glyphMap = isRecording ? 'stop' : hasDraft ? 'arrow-up' : 'mic-outline';
+
+  const sharedScreenProps = {
+    dashboard,
+    refreshing,
+    onRefresh: () => refreshDashboard(false),
+  };
 
   return (
     <View style={styles.root}>
@@ -254,123 +273,146 @@ export function NativeHome() {
       <LinearGradient colors={['#07101B', colors.background, '#040509']} locations={[0, 0.34, 1]} style={StyleSheet.absoluteFill} />
       <SafeAreaView style={styles.safe}>
         <View style={styles.header}>
-          <Pressable style={styles.headerButton} onPress={() => Alert.alert('ONE', `${openReminders} promemoria aperti · ${dashboard.sites.length} spazi · ${dashboard.memories.length} memorie`)}>
-            <Ionicons name="menu-outline" size={24} color={colors.text} />
+          <Pressable
+            style={styles.headerButton}
+            onPress={() => section === 'home' ? setSection('reminders') : setSection('home')}
+          >
+            <Ionicons name={section === 'home' ? 'menu-outline' : 'arrow-back-outline'} size={24} color={colors.text} />
           </Pressable>
           <Text style={styles.brand}>O N E</Text>
-          <Pressable style={styles.avatar} onPress={confirmSignOut}>
+          <Pressable style={styles.avatar} onPress={() => setSection('account')}>
             <LinearGradient colors={[colors.cyan, colors.violet, colors.pink]} style={styles.avatarGradient}>
               <View style={styles.avatarInner}><Ionicons name="person-outline" size={18} color={colors.text} /></View>
             </LinearGradient>
           </Pressable>
         </View>
 
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.content}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => refreshDashboard(false)} tintColor={colors.cyan} />}
-        >
-          <View style={styles.heroCopy}>
-            <Text style={styles.greeting}>Ciao {firstName},</Text>
-            <Text style={styles.tagline}>Mostrami, chiedi, delega.{`\n`}Io mi occupo del resto.</Text>
-          </View>
+        {section === 'home' ? (
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.content}
+            refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => refreshDashboard(false)} tintColor={colors.cyan} />}
+          >
+            <View style={styles.heroCopy}>
+              <Text style={styles.greeting}>Ciao {firstName},</Text>
+              <Text style={styles.tagline}>Mostrami, chiedi, delega.{`\n`}Io mi occupo del resto.</Text>
+            </View>
 
-          <OneOrb state={orbState} onPress={advanceOrb} />
+            <OneOrb state={orbState} onPress={advanceOrb} />
 
-          <View style={styles.askBar}>
-            <View style={styles.spark}><Ionicons name="sparkles-outline" size={18} color={colors.cyan} /></View>
-            <TextInput
-              value={input}
-              onChangeText={setInput}
-              onSubmitEditing={submitRequest}
-              placeholder={submitting ? 'ONE sta analizzando…' : captures.length ? 'Aggiungi una richiesta (opzionale)…' : 'Chiedi qualsiasi cosa…'}
-              placeholderTextColor="#6F7786"
-              style={styles.input}
-              returnKeyType="send"
-              editable={!submitting}
-            />
-            <Pressable
-              onPress={composerAction}
-              disabled={submitting}
-              style={[
-                styles.micButton,
-                isRecording && styles.micButtonRecording,
-                hasDraft && !isRecording && styles.sendButton,
-                submitting && styles.composerButtonDisabled,
-              ]}
-            >
-              <Ionicons
-                name={submitting ? 'sparkles-outline' : composerIcon}
-                size={19}
-                color={isRecording ? colors.green : hasDraft ? colors.cyan : colors.text}
+            <View style={styles.askBar}>
+              <View style={styles.spark}><Ionicons name="sparkles-outline" size={18} color={colors.cyan} /></View>
+              <TextInput
+                value={input}
+                onChangeText={setInput}
+                onSubmitEditing={submitRequest}
+                placeholder={submitting ? 'ONE sta analizzando…' : captures.length ? 'Aggiungi una richiesta (opzionale)…' : 'Chiedi qualsiasi cosa…'}
+                placeholderTextColor="#6F7786"
+                style={styles.input}
+                returnKeyType="send"
+                editable={!submitting}
               />
-            </Pressable>
-          </View>
+              <Pressable
+                onPress={composerAction}
+                disabled={submitting}
+                style={[
+                  styles.micButton,
+                  isRecording && styles.micButtonRecording,
+                  hasDraft && !isRecording && styles.sendButton,
+                  submitting && styles.composerButtonDisabled,
+                ]}
+              >
+                <Ionicons
+                  name={submitting ? 'sparkles-outline' : composerIcon}
+                  size={19}
+                  color={isRecording ? colors.green : hasDraft ? colors.cyan : colors.text}
+                />
+              </Pressable>
+            </View>
 
-          <View style={styles.quickActions}>
-            <QuickAction icon="camera-outline" label="Mostra" onPress={takePhoto} />
-            <QuickAction icon="document-outline" label="Documento" onPress={pickDocument} />
-            <QuickAction icon="image-outline" label="Foto" onPress={pickPhoto} />
-            <QuickAction icon={isRecording ? 'stop-circle-outline' : 'mic-outline'} label={isRecording ? 'Stop' : 'Parla'} onPress={toggleRecording} />
-          </View>
+            <View style={styles.quickActions}>
+              <QuickAction icon="camera-outline" label="Mostra" onPress={takePhoto} />
+              <QuickAction icon="document-outline" label="Documento" onPress={pickDocument} />
+              <QuickAction icon="image-outline" label="Foto" onPress={pickPhoto} />
+              <QuickAction icon={isRecording ? 'stop-circle-outline' : 'mic-outline'} label={isRecording ? 'Stop' : 'Parla'} onPress={toggleRecording} />
+            </View>
 
-          {captures.length > 0 && (
-            <View style={styles.attachmentsBlock}>
-              <View style={styles.attachmentsHeader}>
-                <Text style={styles.attachmentsTitle}>Allegati per ONE</Text>
-                <Text style={styles.attachmentsCount}>{captures.length}</Text>
+            {captures.length > 0 && (
+              <View style={styles.attachmentsBlock}>
+                <View style={styles.attachmentsHeader}>
+                  <Text style={styles.attachmentsTitle}>Allegati per ONE</Text>
+                  <Text style={styles.attachmentsCount}>{captures.length}</Text>
+                </View>
+                {captures.map((item) => (
+                  <CapturePreview key={item.id} item={item} onRemove={() => removeCapture(item.id)} />
+                ))}
               </View>
-              {captures.map((item) => (
-                <CapturePreview key={item.id} item={item} onRemove={() => removeCapture(item.id)} />
-              ))}
-            </View>
-          )}
-
-          {aiResult && user && <NativeAIResponseCard result={aiResult} userId={user.id} onChanged={() => refreshDashboard(true)} />}
-
-          <View style={styles.pulseRow}>
-            <PulseStat value={String(openReminders)} label="Promemoria" />
-            <PulseStat value={String(dashboard.memories.length)} label="Recall" />
-            <PulseStat value={String(dashboard.sites.length)} label="Spazi" />
-          </View>
-
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Attività recenti</Text>
-            <Text style={styles.sectionLink}>LIVE</Text>
-          </View>
-
-          <View style={styles.card}>
-            {recentItems.length ? recentItems.slice(0, 5).map((item) => <RecentActivity item={item} key={item.id} />) : (
-              <View style={styles.empty}><Text style={styles.emptyTitle}>Nessuna attività ancora</Text><Text style={styles.emptyCopy}>Le azioni e le richieste a ONE compariranno qui.</Text></View>
             )}
-          </View>
 
-          <View style={styles.memoryCard}>
-            <View style={styles.memoryIcon}>
-              <LinearGradient colors={[colors.cyan, colors.blue, colors.violet, colors.pink]} style={styles.memoryGradient}><View style={styles.memoryInner} /></LinearGradient>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.memoryTitle}>La tua memoria privata</Text>
-              <Text style={styles.memoryCopy}>{dashboard.memories.length ? `${dashboard.memories.length} elementi sincronizzati nel tuo Recall.` : 'ONE ricorda ciò che conta, così non devi farlo tu.'}</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
-          </View>
+            {aiResult && user && <NativeAIResponseCard result={aiResult} userId={user.id} onChanged={() => refreshDashboard(true)} />}
 
-          <View style={{ height: 110 }} />
-        </ScrollView>
+            <View style={styles.pulseRow}>
+              <PulseStat value={String(openReminders)} label="Promemoria" onPress={() => setSection('reminders')} />
+              <PulseStat value={String(dashboard.memories.length)} label="Recall" onPress={() => setSection('recall')} />
+              <PulseStat value={String(dashboard.sites.length)} label="Spazi" onPress={() => setSection('spaces')} />
+            </View>
+
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Attività recenti</Text>
+              <Text style={styles.sectionLink}>LIVE</Text>
+            </View>
+
+            <View style={styles.card}>
+              {recentItems.length ? recentItems.slice(0, 5).map((item) => <RecentActivity item={item} key={item.id} />) : (
+                <View style={styles.empty}><Text style={styles.emptyTitle}>Nessuna attività ancora</Text><Text style={styles.emptyCopy}>Le azioni e le richieste a ONE compariranno qui.</Text></View>
+              )}
+            </View>
+
+            <Pressable style={styles.memoryCard} onPress={() => setSection('recall')}>
+              <View style={styles.memoryIcon}>
+                <LinearGradient colors={[colors.cyan, colors.blue, colors.violet, colors.pink]} style={styles.memoryGradient}><View style={styles.memoryInner} /></LinearGradient>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.memoryTitle}>La tua memoria privata</Text>
+                <Text style={styles.memoryCopy}>{dashboard.memories.length ? `${dashboard.memories.length} elementi sincronizzati nel tuo Recall.` : 'ONE ricorda ciò che conta, così non devi farlo tu.'}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
+            </Pressable>
+
+            <View style={{ height: 110 }} />
+          </ScrollView>
+        ) : section === 'spaces' ? (
+          <NativeSpacesScreen {...sharedScreenProps} />
+        ) : section === 'recall' ? (
+          <NativeRecallScreen {...sharedScreenProps} onOpenReminders={() => setSection('reminders')} />
+        ) : section === 'reminders' && user ? (
+          <NativeRemindersScreen
+            {...sharedScreenProps}
+            userId={user.id}
+            onChanged={() => refreshDashboard(true)}
+          />
+        ) : (
+          <NativeAccountScreen
+            {...sharedScreenProps}
+            fullName={profile?.full_name ?? null}
+            email={user?.email ?? profile?.email ?? null}
+            onOpenReminders={() => setSection('reminders')}
+            onSignOut={confirmSignOut}
+          />
+        )}
 
         <View style={styles.bottomNav}>
-          <NavItem icon="home-outline" active />
-          <NavItem icon="layers-outline" />
+          <NavItem icon="home-outline" label="Home" active={section === 'home'} onPress={() => setSection('home')} />
+          <NavItem icon="layers-outline" label="Spazi" active={section === 'spaces'} onPress={() => setSection('spaces')} />
           <EnergyOrb
             state={orbState}
             size={64}
             compact
-            onPress={() => setOrbState('activating')}
+            onPress={openOne}
             accessibilityLabel="Attiva ONE"
           />
-          <NavItem icon="search-outline" />
-          <NavItem icon="person-outline" />
+          <NavItem icon="search-outline" label="Recall" active={section === 'recall' || section === 'reminders'} onPress={() => setSection('recall')} />
+          <NavItem icon="person-outline" label="Account" active={section === 'account'} onPress={() => setSection('account')} />
         </View>
       </SafeAreaView>
     </View>
@@ -381,12 +423,21 @@ function QuickAction({ icon, label, onPress }: { icon: keyof typeof Ionicons.gly
   return <Pressable style={styles.quickAction} onPress={onPress}><Ionicons name={icon} size={18} color={colors.text} /><Text style={styles.quickActionText}>{label}</Text></Pressable>;
 }
 
-function NavItem({ icon, active = false }: { icon: keyof typeof Ionicons.glyphMap; active?: boolean }) {
-  return <Pressable style={styles.navItem}><Ionicons name={icon} size={21} color={active ? colors.cyan : colors.textMuted} /></Pressable>;
+function NavItem({ icon, label, active = false, onPress }: { icon: keyof typeof Ionicons.glyphMap; label: string; active?: boolean; onPress: () => void }) {
+  return (
+    <Pressable style={styles.navItem} onPress={onPress} accessibilityRole="button" accessibilityLabel={label}>
+      <Ionicons name={icon} size={21} color={active ? colors.cyan : colors.textMuted} />
+    </Pressable>
+  );
 }
 
-function PulseStat({ value, label }: { value: string; label: string }) {
-  return <View style={styles.pulseStat}><Text style={styles.pulseValue}>{value}</Text><Text style={styles.pulseLabel}>{label}</Text></View>;
+function PulseStat({ value, label, onPress }: { value: string; label: string; onPress: () => void }) {
+  return (
+    <Pressable style={({ pressed }) => [styles.pulseStat, pressed && styles.pulsePressed]} onPress={onPress}>
+      <Text style={styles.pulseValue}>{value}</Text>
+      <Text style={styles.pulseLabel}>{label}</Text>
+    </Pressable>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -418,6 +469,7 @@ const styles = StyleSheet.create({
   attachmentsCount: { color: colors.cyan, fontSize: 11, fontWeight: '700' },
   pulseRow: { flexDirection: 'row', gap: 8, marginTop: 18 },
   pulseStat: { flex: 1, minHeight: 66, borderRadius: 17, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
+  pulsePressed: { opacity: 0.72 },
   pulseValue: { color: colors.text, fontSize: 20, fontWeight: '700' },
   pulseLabel: { marginTop: 3, color: colors.textMuted, fontSize: 10.5 },
   sectionHeader: { marginTop: 26, marginBottom: 11, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
