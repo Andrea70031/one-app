@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import type { OneAIResult } from '../native/oneAI';
-import { nativeActionFromAI } from '../native/aiActionAdapter';
-import { executeCoordinatedAction } from '../native/oneActionCoordinator';
+import { canExecuteOneAction, executeCoordinatedAction } from '../native/oneActionCoordinator';
 import { saveOneMemory } from '../native/oneData';
 import { colors } from '../theme/colors';
 
@@ -38,12 +37,15 @@ export function NativeAIResponseCard({ result, userId, onChanged }: Props) {
 
   const run = (index: number) => {
     const source = result.actions[index];
-    const native = source ? nativeActionFromAI(source) : null;
-    if (!source || !native) return;
+    if (!source || !canExecuteOneAction(source)) return;
 
+    const kind = String(source.kind ?? source.type ?? 'azione');
+    const cloudAction = kind.startsWith('create_') || kind === 'update_site_progress';
     Alert.alert(
-      native.label || 'Esegui azione',
-      'ONE eseguirà questa azione sul dispositivo. Vuoi continuare?',
+      source.label || 'Esegui azione',
+      cloudAction
+        ? 'ONE registrerà questa operazione nei tuoi dati. Vuoi continuare?'
+        : 'ONE eseguirà questa azione sul dispositivo. Vuoi continuare?',
       [
         { text: 'Annulla', style: 'cancel' },
         {
@@ -78,8 +80,7 @@ export function NativeAIResponseCard({ result, userId, onChanged }: Props) {
           <Text style={styles.secondaryText}>{saved ? 'Salvato in Recall' : 'Salva in Recall'}</Text>
         </Pressable>
         {result.actions.map((action, index) => {
-          const native = nativeActionFromAI(action);
-          if (!native) return null;
+          if (!canExecuteOneAction(action)) return null;
           return (
             <Pressable key={`${action.label}-${index}`} style={styles.secondary} onPress={() => run(index)} disabled={busy === `action-${index}`}>
               <Ionicons name="flash-outline" size={16} color={colors.text} />
