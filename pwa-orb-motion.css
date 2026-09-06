@@ -1,41 +1,53 @@
-/* ONE PWA orb v2 — restrained premium motion, matched to the approved preview language. */
-.orb-section{overflow:visible}
-.orb-button{overflow:visible}
+/* ONE PWA orb v3 — SUPERNOVA. High-energy motion inspired by the approved visual preview. */
+
+.orb-section{overflow:visible;margin-top:10px}
+.orb-button{width:316px;height:316px;overflow:visible;display:grid;place-items:center}
 
 .orb{
-  width:245px;
-  height:245px;
+  width:282px;
+  height:282px;
   padding:0;
+  position:relative;
   isolation:isolate;
   overflow:visible;
   border-radius:50%;
-  filter:drop-shadow(0 0 18px rgba(90,141,255,.24));
-  animation:oneOrbBreath 4.8s ease-in-out infinite;
+  filter:
+    drop-shadow(0 0 18px rgba(72,205,255,.42))
+    drop-shadow(0 0 40px rgba(113,93,255,.28))
+    drop-shadow(0 0 64px rgba(230,78,255,.16));
+  animation:snBreath 3.7s ease-in-out infinite;
+  will-change:transform,filter;
 }
 
+/* wide atmospheric halo */
 .orb::before{
   content:"";
   position:absolute;
-  inset:-14px;
+  inset:-38px;
   border-radius:50%;
-  background:radial-gradient(circle,rgba(83,129,255,.12) 0%,rgba(167,102,255,.055) 42%,transparent 72%);
-  filter:blur(9px);
-  opacity:.85;
-  z-index:-2;
+  z-index:-3;
   pointer-events:none;
-  animation:oneHalo 4.8s ease-in-out infinite;
+  background:
+    radial-gradient(circle at 31% 38%,rgba(32,210,255,.22),transparent 23%),
+    radial-gradient(circle at 73% 63%,rgba(240,70,255,.18),transparent 27%),
+    radial-gradient(circle,rgba(56,112,255,.20) 0%,rgba(130,74,255,.11) 36%,transparent 70%);
+  filter:blur(20px);
+  animation:snHalo 4.4s ease-in-out infinite;
 }
 
+/* breathing shockwave */
 .orb::after{
   content:"";
   position:absolute;
-  inset:-8px;
+  inset:-15px;
   border-radius:50%;
-  border:1px solid rgba(142,167,255,.12);
-  box-shadow:inset 0 0 18px rgba(66,232,224,.025),0 0 16px rgba(167,102,255,.04);
-  z-index:-1;
+  z-index:-2;
   pointer-events:none;
-  animation:oneOuterBreath 4.8s ease-in-out infinite;
+  border:1px solid rgba(111,177,255,.22);
+  box-shadow:
+    0 0 16px rgba(45,209,255,.10),
+    inset 0 0 24px rgba(192,82,255,.06);
+  animation:snShockwave 3.5s ease-out infinite;
 }
 
 .orb-ring{
@@ -43,18 +55,28 @@
   inset:0;
   border-radius:50%;
   overflow:visible;
-  background:conic-gradient(from 14deg,
-    #55efe7 0deg,
-    #54a9ff 78deg,
-    #7d73ff 150deg,
-    #c66eff 220deg,
-    #f28ac6 274deg,
-    #e5d28d 328deg,
-    #55efe7 360deg);
-  animation:oneRing 12s linear infinite;
-  box-shadow:0 0 12px rgba(79,170,255,.22),0 0 20px rgba(178,100,255,.1);
+  z-index:1;
+  background:conic-gradient(
+    from 10deg,
+    #54fff0 0deg,
+    #3bd5ff 52deg,
+    #4f8eff 105deg,
+    #736cff 155deg,
+    #b55cff 214deg,
+    #ff63cf 268deg,
+    #ff9dce 302deg,
+    #ffe0a1 335deg,
+    #54fff0 360deg
+  );
+  box-shadow:
+    0 0 12px rgba(62,219,255,.52),
+    0 0 28px rgba(87,120,255,.28),
+    0 0 44px rgba(227,81,255,.17);
+  animation:snRingSpin 5.4s linear infinite;
+  will-change:transform;
 }
 
+/* two luminous orbital paths */
 .orb-ring::before,
 .orb-ring::after{
   content:"";
@@ -63,124 +85,260 @@
   top:50%;
   border-radius:999px;
   pointer-events:none;
-  opacity:.52;
+  transform-origin:center;
+  mix-blend-mode:screen;
 }
 
 .orb-ring::before{
-  width:104%;
-  height:40%;
-  border:1px solid rgba(93,169,255,.27);
-  box-shadow:0 0 8px rgba(66,232,224,.055);
+  width:126%;
+  height:44%;
+  border:1.25px solid rgba(62,198,255,.72);
+  box-shadow:
+    0 0 7px rgba(60,218,255,.48),
+    0 0 16px rgba(75,122,255,.20);
   transform:translate(-50%,-50%) rotate(18deg);
-  animation:oneOrbitA 14s linear infinite;
+  animation:snOrbitA 6.4s linear infinite;
 }
 
 .orb-ring::after{
-  width:94%;
-  height:34%;
-  border:1px solid rgba(215,111,241,.22);
-  box-shadow:0 0 8px rgba(242,123,196,.045);
-  transform:translate(-50%,-50%) rotate(-31deg);
-  animation:oneOrbitB 18s linear infinite reverse;
+  width:119%;
+  height:38%;
+  border:1.15px solid rgba(230,91,255,.61);
+  box-shadow:
+    0 0 7px rgba(236,93,255,.38),
+    0 0 16px rgba(255,95,199,.17);
+  transform:translate(-50%,-50%) rotate(-33deg);
+  animation:snOrbitB 8.1s linear infinite reverse;
 }
 
 .orb-core{
   position:absolute;
-  inset:6px;
-  border:12px solid #05070c;
+  inset:8px;
+  border:11px solid #04060b;
   border-radius:50%;
   overflow:hidden;
   display:grid;
   place-items:center;
-  z-index:1;
+  z-index:2;
   background:
-    radial-gradient(circle at 35% 70%,rgba(44,160,195,.11),transparent 34%),
-    radial-gradient(circle at 72% 30%,rgba(130,72,185,.105),transparent 34%),
-    radial-gradient(circle at 50% 52%,#0a0e16 0%,#070a10 54%,#05070b 100%);
+    radial-gradient(circle at 50% 50%,rgba(12,17,34,.98) 0%,rgba(6,9,18,.995) 48%,#03050a 100%);
   box-shadow:
-    inset 0 0 34px rgba(91,141,255,.055),
-    inset 0 -18px 42px rgba(66,232,224,.025),
-    0 0 0 1px rgba(255,255,255,.025);
+    inset 0 0 48px rgba(58,145,255,.13),
+    inset 0 0 90px rgba(176,56,255,.08),
+    0 0 0 1px rgba(255,255,255,.03);
 }
 
+/* old restrained core layers become deep nebula haze */
 .orb-core::before,
 .orb-core::after{
   content:"";
   position:absolute;
   left:50%;
   top:50%;
-  border-radius:999px;
   pointer-events:none;
-  z-index:0;
-  filter:blur(11px);
+  border-radius:50%;
+  mix-blend-mode:screen;
+  z-index:1;
 }
 
 .orb-core::before{
-  width:72%;
-  height:22%;
-  background:linear-gradient(90deg,transparent 0%,rgba(63,201,222,.05) 16%,rgba(74,140,255,.23) 48%,rgba(173,101,255,.17) 72%,transparent 100%);
-  opacity:.72;
-  transform:translate(-50%,-50%) rotate(24deg);
-  animation:oneInnerArcA 9.5s ease-in-out infinite;
+  width:92%;
+  height:92%;
+  transform:translate(-50%,-50%);
+  background:
+    radial-gradient(circle at 28% 42%,rgba(0,214,255,.24),transparent 24%),
+    radial-gradient(circle at 70% 34%,rgba(93,76,255,.28),transparent 30%),
+    radial-gradient(circle at 61% 72%,rgba(255,70,208,.22),transparent 28%);
+  filter:blur(18px);
+  opacity:.92;
+  animation:snNebula 5.2s ease-in-out infinite;
 }
 
 .orb-core::after{
-  width:58%;
-  height:16%;
-  background:linear-gradient(90deg,transparent 0%,rgba(112,147,255,.035) 18%,rgba(117,97,255,.17) 48%,rgba(224,115,201,.12) 73%,transparent 100%);
-  opacity:.6;
-  transform:translate(-50%,-50%) rotate(-34deg);
-  animation:oneInnerArcB 12s ease-in-out infinite reverse;
+  width:44%;
+  height:44%;
+  transform:translate(-50%,-50%);
+  background:radial-gradient(circle,rgba(130,207,255,.21),rgba(79,94,255,.12) 42%,transparent 73%);
+  filter:blur(13px);
+  opacity:.82;
+  animation:snCorePulse 2.7s ease-in-out infinite;
 }
+
+/* JavaScript injects these three layers inside .orb-core */
+.supernova-swirl{
+  position:absolute;
+  left:50%;
+  top:50%;
+  border-radius:50%;
+  pointer-events:none;
+  mix-blend-mode:screen;
+  z-index:3;
+  will-change:transform,opacity,filter;
+  -webkit-mask:radial-gradient(circle,transparent 0 17%,#000 27% 72%,transparent 83%);
+  mask:radial-gradient(circle,transparent 0 17%,#000 27% 72%,transparent 83%);
+}
+
+.supernova-swirl.sn-a{
+  width:88%;
+  height:88%;
+  background:conic-gradient(
+    from 5deg,
+    transparent 0 18deg,
+    rgba(34,226,255,.10) 24deg,
+    #36e5ff 43deg,
+    #2aa7ff 68deg,
+    transparent 98deg,
+    transparent 148deg,
+    rgba(111,74,255,.22) 162deg,
+    #795cff 187deg,
+    #e84fff 220deg,
+    transparent 250deg,
+    transparent 292deg,
+    #ff6fcf 316deg,
+    rgba(255,144,217,.16) 338deg,
+    transparent 360deg
+  );
+  filter:blur(5px) drop-shadow(0 0 8px rgba(59,210,255,.62));
+  opacity:.98;
+  animation:snSwirlA 3.35s linear infinite;
+}
+
+.supernova-swirl.sn-b{
+  width:70%;
+  height:70%;
+  background:conic-gradient(
+    from 170deg,
+    transparent 0 24deg,
+    #23d8ff 51deg,
+    #536cff 83deg,
+    transparent 116deg,
+    transparent 176deg,
+    #cb4dff 209deg,
+    #ff5ec6 237deg,
+    transparent 270deg,
+    transparent 324deg,
+    rgba(70,215,255,.88) 348deg,
+    transparent 360deg
+  );
+  filter:blur(6px) drop-shadow(0 0 10px rgba(208,73,255,.54));
+  opacity:.94;
+  animation:snSwirlB 2.65s linear infinite reverse;
+}
+
+.supernova-swirl.sn-c{
+  width:98%;
+  height:98%;
+  background:conic-gradient(
+    from 80deg,
+    transparent 0 54deg,
+    rgba(52,225,255,.48) 72deg,
+    transparent 97deg,
+    transparent 170deg,
+    rgba(154,82,255,.42) 188deg,
+    transparent 216deg,
+    transparent 289deg,
+    rgba(255,83,203,.36) 307deg,
+    transparent 338deg
+  );
+  filter:blur(10px);
+  opacity:.67;
+  animation:snSwirlC 6.4s linear infinite;
+}
+
+/* particle field outside the black core */
+.supernova-particles{
+  position:absolute;
+  inset:-19%;
+  z-index:4;
+  pointer-events:none;
+  overflow:visible;
+}
+
+.supernova-particles i{
+  position:absolute;
+  left:var(--x);
+  top:var(--y);
+  width:var(--s);
+  height:var(--s);
+  border-radius:50%;
+  background:var(--c);
+  color:var(--c);
+  box-shadow:0 0 7px currentColor,0 0 16px currentColor;
+  opacity:.72;
+  animation:snParticle var(--d) ease-in-out var(--delay) infinite;
+  will-change:transform,opacity;
+}
+
+/* Keep the original particle container available, but the new outer field supplies idle/listening particles. */
+.orb .particles.hidden{display:block!important;opacity:.22}
+.orb.listening .particles.hidden{opacity:.38}
+.orb.thinking .particles.hidden{opacity:.62}
+.particle{box-shadow:0 0 8px currentColor!important}
 
 .orb-label{
   position:relative;
-  z-index:7;
+  z-index:9;
   color:#f7f8fb;
-  text-shadow:0 0 12px rgba(255,255,255,.035);
+  text-shadow:0 0 9px rgba(255,255,255,.12),0 0 20px rgba(89,170,255,.08);
 }
+.wave{z-index:10;filter:drop-shadow(0 0 8px rgba(66,232,224,.55))}
+.wave span{box-shadow:0 0 10px rgba(66,232,224,.72),0 0 18px rgba(66,232,224,.22)}
 
-.wave{z-index:6}
-.particles{z-index:5}
-.particle{opacity:.48!important;box-shadow:0 0 6px rgba(201,255,255,.35)!important}
+/* IDLE: already alive, but not at maximum output */
+.orb.idle .supernova-particles{opacity:.58}
 
+/* LISTENING: cyan-biased absorption, pulse and faster plasma */
 .orb.listening{
-  filter:drop-shadow(0 0 21px rgba(66,232,224,.31));
-  animation:oneListenBreath 1.45s ease-in-out infinite;
+  filter:
+    drop-shadow(0 0 22px rgba(53,229,255,.58))
+    drop-shadow(0 0 46px rgba(63,120,255,.31))
+    drop-shadow(0 0 68px rgba(185,76,255,.15));
+  animation:snListenBreath 1.28s ease-in-out infinite;
 }
-.orb.listening::after{border-color:rgba(66,232,224,.24);animation:oneListeningRipple 1.45s ease-out infinite}
-.orb.listening .orb-ring{animation-duration:7s}
-.orb.listening .orb-ring::before{border-color:rgba(66,232,224,.36);opacity:.72;animation-duration:8s}
-.orb.listening .orb-core::before{opacity:.9;animation-duration:5s}
-.orb.listening .orb-core::after{opacity:.72;animation-duration:6.2s}
+.orb.listening::after{border-color:rgba(65,232,255,.46);animation:snListenWave 1.25s ease-out infinite}
+.orb.listening .orb-ring{animation-duration:3.7s}
+.orb.listening .orb-ring::before{animation-duration:4.1s;border-color:rgba(69,224,255,.84)}
+.orb.listening .orb-ring::after{animation-duration:5.3s}
+.orb.listening .supernova-swirl.sn-a{animation-duration:2.05s;filter:blur(4px) drop-shadow(0 0 12px rgba(46,225,255,.78))}
+.orb.listening .supernova-swirl.sn-b{animation-duration:1.8s}
+.orb.listening .supernova-particles{opacity:.86}
 
+/* THINKING: controlled supernova — max energy and density */
 .orb.thinking{
-  filter:drop-shadow(0 0 23px rgba(108,117,255,.32));
-  animation:oneThinkBreath 2s ease-in-out infinite;
+  filter:
+    drop-shadow(0 0 26px rgba(44,207,255,.66))
+    drop-shadow(0 0 54px rgba(91,91,255,.43))
+    drop-shadow(0 0 82px rgba(234,66,255,.29));
+  animation:snThinkBreath .92s ease-in-out infinite;
 }
-.orb.thinking::after{border-color:rgba(167,102,255,.24);animation:oneThinkingRipple 1.8s ease-out infinite}
-.orb.thinking .orb-ring{animation-duration:3.2s}
-.orb.thinking .orb-ring::before{opacity:.65;animation-duration:4.5s}
-.orb.thinking .orb-ring::after{opacity:.6;animation-duration:5.4s}
-.orb.thinking .orb-core::before{opacity:.95;animation-duration:2.8s}
-.orb.thinking .orb-core::after{opacity:.84;animation-duration:3.4s}
+.orb.thinking::before{opacity:1.18;filter:blur(17px)}
+.orb.thinking::after{border-color:rgba(199,79,255,.50);animation:snThinkWave 1.05s ease-out infinite}
+.orb.thinking .orb-ring{animation-duration:1.7s;box-shadow:0 0 18px rgba(61,222,255,.62),0 0 40px rgba(109,91,255,.38),0 0 58px rgba(244,74,255,.25)}
+.orb.thinking .orb-ring::before{animation-duration:2.25s}
+.orb.thinking .orb-ring::after{animation-duration:2.75s}
+.orb.thinking .supernova-swirl.sn-a{animation-duration:.86s;filter:blur(4px) drop-shadow(0 0 14px rgba(49,223,255,.86));transform-origin:center}
+.orb.thinking .supernova-swirl.sn-b{animation-duration:.72s;filter:blur(5px) drop-shadow(0 0 15px rgba(239,72,255,.72))}
+.orb.thinking .supernova-swirl.sn-c{animation-duration:1.9s;opacity:.96}
+.orb.thinking .supernova-particles{opacity:1}
+.orb.thinking .supernova-particles i{animation-duration:calc(var(--d) * .58)}
 
-.orb.done{animation:oneDone .58s cubic-bezier(.2,.86,.27,1.18) both}
-.orb.done::after{border-color:rgba(70,227,183,.3)}
-.orb.done .orb-ring{background:conic-gradient(from 0deg,#46e3b7,#69eed2,#46e3b7)}
+/* DONE: compact energy discharge then app.js returns to idle */
+.orb.done{animation:snDone .64s cubic-bezier(.18,.88,.26,1.25) both}
+.orb.done::before{background:radial-gradient(circle,rgba(70,227,183,.31),rgba(70,227,183,.07) 43%,transparent 72%)}
+.orb.done .orb-ring{background:conic-gradient(from 0deg,#47f0c2,#6ffff1,#68a9ff,#47f0c2)}
 
-/* compact orb in the bottom navigation */
+/* mini supernova — same visual DNA in the bottom navigation */
 .bottom-nav .nav-orb{
   position:relative;
-  width:58px;
-  height:58px;
+  width:60px;
+  height:60px;
   padding:4px;
   border-radius:50%;
   overflow:visible;
   isolation:isolate;
-  background:conic-gradient(from 12deg,#55efe7,#54a9ff,#8272ff,#c66eff,#ef84c6,#55efe7);
-  box-shadow:0 0 13px rgba(90,141,255,.18),0 0 20px rgba(167,102,255,.08);
-  animation:oneNavBreath 3.8s ease-in-out infinite;
+  background:conic-gradient(from 12deg,#53fff0,#3dcfff,#597cff,#a95cff,#f660dc,#ff8fc9,#53fff0);
+  box-shadow:0 0 14px rgba(66,211,255,.34),0 0 25px rgba(190,75,255,.20);
+  animation:snNavBreath 2.8s ease-in-out infinite;
 }
 
 .bottom-nav .nav-orb::before,
@@ -192,83 +350,96 @@
   border-radius:999px;
   pointer-events:none;
   z-index:-1;
+  mix-blend-mode:screen;
 }
-
 .bottom-nav .nav-orb::before{
-  width:62px;
-  height:24px;
-  border:1px solid rgba(91,174,255,.25);
-  transform:translate(-50%,-50%) rotate(22deg);
-  animation:oneNavOrbitA 9s linear infinite;
+  width:69px;height:27px;
+  border:1px solid rgba(65,217,255,.56);
+  box-shadow:0 0 7px rgba(65,217,255,.26);
+  transform:translate(-50%,-50%) rotate(23deg);
+  animation:snNavOrbitA 4.7s linear infinite;
 }
-
 .bottom-nav .nav-orb::after{
-  width:57px;
-  height:21px;
-  border:1px solid rgba(213,112,238,.2);
-  transform:translate(-50%,-50%) rotate(-32deg);
-  animation:oneNavOrbitB 12s linear infinite reverse;
+  width:65px;height:24px;
+  border:1px solid rgba(231,83,255,.45);
+  box-shadow:0 0 7px rgba(231,83,255,.21);
+  transform:translate(-50%,-50%) rotate(-31deg);
+  animation:snNavOrbitB 6s linear infinite reverse;
 }
 
 .bottom-nav .nav-orb span{
   position:relative;
   display:block;
-  width:100%;
-  height:100%;
+  width:100%;height:100%;
   border-radius:50%;
   overflow:hidden;
   background:
-    radial-gradient(circle at 33% 68%,rgba(66,232,224,.10),transparent 32%),
-    radial-gradient(circle at 72% 31%,rgba(167,102,255,.11),transparent 34%),
-    #06090e;
+    radial-gradient(circle at 50% 50%,rgba(10,16,31,.90),#04060c 72%);
+  box-shadow:inset 0 0 14px rgba(61,157,255,.18),inset 0 0 24px rgba(217,67,255,.08);
 }
-
 .bottom-nav .nav-orb span::before,
 .bottom-nav .nav-orb span::after{
   content:"";
   position:absolute;
-  left:50%;
-  top:50%;
-  border-radius:999px;
-  filter:blur(3px);
+  left:50%;top:50%;
+  border-radius:50%;
+  mix-blend-mode:screen;
+  -webkit-mask:radial-gradient(circle,transparent 0 18%,#000 31% 72%,transparent 84%);
+  mask:radial-gradient(circle,transparent 0 18%,#000 31% 72%,transparent 84%);
 }
-
 .bottom-nav .nav-orb span::before{
-  width:72%;
-  height:11%;
-  background:linear-gradient(90deg,transparent,rgba(75,169,255,.35),rgba(176,103,255,.23),transparent);
-  transform:translate(-50%,-50%) rotate(24deg);
-  animation:oneNavInnerA 6.5s ease-in-out infinite;
+  width:92%;height:92%;
+  background:conic-gradient(from 10deg,transparent 0 24deg,#38e8ff 50deg,#4f7cff 82deg,transparent 120deg,transparent 186deg,#c44fff 216deg,#ff5ac9 245deg,transparent 290deg,#44dfff 330deg,transparent 360deg);
+  filter:blur(2.6px) drop-shadow(0 0 5px rgba(73,211,255,.68));
+  transform:translate(-50%,-50%);
+  animation:snNavSwirlA 2.15s linear infinite;
 }
-
 .bottom-nav .nav-orb span::after{
-  width:58%;
-  height:9%;
-  background:linear-gradient(90deg,transparent,rgba(66,232,224,.18),rgba(220,112,220,.18),transparent);
-  transform:translate(-50%,-50%) rotate(-33deg);
-  animation:oneNavInnerB 8s ease-in-out infinite reverse;
+  width:68%;height:68%;
+  background:conic-gradient(from 160deg,transparent,#32ddff 52deg,#7660ff 98deg,transparent 140deg,transparent 230deg,#ff55cb 274deg,transparent 325deg);
+  filter:blur(3px);
+  transform:translate(-50%,-50%);
+  animation:snNavSwirlB 1.7s linear infinite reverse;
 }
 
-@keyframes oneOrbBreath{0%,100%{transform:scale(.992)}50%{transform:scale(1.018)}}
-@keyframes oneHalo{0%,100%{opacity:.62;transform:scale(.98)}50%{opacity:.92;transform:scale(1.035)}}
-@keyframes oneOuterBreath{0%,100%{opacity:.4;transform:scale(.985)}50%{opacity:.72;transform:scale(1.025)}}
-@keyframes oneRing{to{transform:rotate(360deg)}}
-@keyframes oneOrbitA{to{transform:translate(-50%,-50%) rotate(378deg)}}
-@keyframes oneOrbitB{to{transform:translate(-50%,-50%) rotate(329deg)}}
-@keyframes oneInnerArcA{0%,100%{transform:translate(-54%,-48%) rotate(24deg) scaleX(.92)}50%{transform:translate(-45%,-54%) rotate(204deg) scaleX(1.08)}}
-@keyframes oneInnerArcB{0%,100%{transform:translate(-47%,-52%) rotate(-34deg) scaleX(.94)}50%{transform:translate(-55%,-45%) rotate(146deg) scaleX(1.06)}}
-@keyframes oneListenBreath{0%,100%{transform:scale(.992)}50%{transform:scale(1.034)}}
-@keyframes oneThinkBreath{0%,100%{transform:scale(.997)}50%{transform:scale(1.022)}}
-@keyframes oneListeningRipple{0%{opacity:.42;transform:scale(.92)}100%{opacity:0;transform:scale(1.11)}}
-@keyframes oneThinkingRipple{0%{opacity:.36;transform:scale(.94)}100%{opacity:0;transform:scale(1.09)}}
-@keyframes oneDone{0%{transform:scale(.82)}68%{transform:scale(1.045)}100%{transform:scale(1)}}
-@keyframes oneNavBreath{0%,100%{transform:scale(.97)}50%{transform:scale(1.035)}}
-@keyframes oneNavOrbitA{to{transform:translate(-50%,-50%) rotate(382deg)}}
-@keyframes oneNavOrbitB{to{transform:translate(-50%,-50%) rotate(-392deg)}}
-@keyframes oneNavInnerA{0%,100%{transform:translate(-54%,-49%) rotate(24deg)}50%{transform:translate(-45%,-53%) rotate(204deg)}}
-@keyframes oneNavInnerB{0%,100%{transform:translate(-47%,-51%) rotate(-33deg)}50%{transform:translate(-55%,-46%) rotate(147deg)}}
+.bottom-nav .nav-orb[data-one-state="listening"]{box-shadow:0 0 17px rgba(54,230,255,.52),0 0 30px rgba(81,124,255,.26)}
+.bottom-nav .nav-orb[data-one-state="listening"] span::before{animation-duration:1.25s}
+.bottom-nav .nav-orb[data-one-state="thinking"]{box-shadow:0 0 20px rgba(52,218,255,.58),0 0 37px rgba(221,68,255,.35);animation-duration:1.1s}
+.bottom-nav .nav-orb[data-one-state="thinking"] span::before{animation-duration:.72s}
+.bottom-nav .nav-orb[data-one-state="thinking"] span::after{animation-duration:.59s}
+.bottom-nav .nav-orb[data-one-state="done"]{box-shadow:0 0 20px rgba(70,227,183,.54)}
+
+@keyframes snBreath{0%,100%{transform:scale(.985)}50%{transform:scale(1.024)}}
+@keyframes snHalo{0%,100%{opacity:.68;transform:scale(.96) rotate(-2deg)}50%{opacity:1;transform:scale(1.065) rotate(3deg)}}
+@keyframes snShockwave{0%{opacity:.46;transform:scale(.94)}62%{opacity:.13}100%{opacity:0;transform:scale(1.13)}}
+@keyframes snRingSpin{to{transform:rotate(360deg)}}
+@keyframes snOrbitA{to{transform:translate(-50%,-50%) rotate(378deg)}}
+@keyframes snOrbitB{to{transform:translate(-50%,-50%) rotate(-393deg)}}
+@keyframes snNebula{0%,100%{transform:translate(-51%,-49%) rotate(-5deg) scale(.96);opacity:.72}50%{transform:translate(-48%,-52%) rotate(7deg) scale(1.09);opacity:1}}
+@keyframes snCorePulse{0%,100%{transform:translate(-50%,-50%) scale(.82);opacity:.46}50%{transform:translate(-50%,-50%) scale(1.18);opacity:.94}}
+@keyframes snSwirlA{from{transform:translate(-50%,-50%) rotate(0deg) scale(.96)}50%{transform:translate(-50%,-50%) rotate(180deg) scale(1.04)}to{transform:translate(-50%,-50%) rotate(360deg) scale(.96)}}
+@keyframes snSwirlB{from{transform:translate(-50%,-50%) rotate(0deg) scale(1.03)}50%{transform:translate(-50%,-50%) rotate(-180deg) scale(.95)}to{transform:translate(-50%,-50%) rotate(-360deg) scale(1.03)}}
+@keyframes snSwirlC{to{transform:translate(-50%,-50%) rotate(360deg)}}
+@keyframes snParticle{0%,100%{transform:translate(0,0) scale(.65);opacity:.18}35%{opacity:.94}50%{transform:translate(var(--dx),var(--dy)) scale(1.35);opacity:1}75%{opacity:.58}}
+@keyframes snListenBreath{0%,100%{transform:scale(.985)}50%{transform:scale(1.045)}}
+@keyframes snThinkBreath{0%,100%{transform:scale(.99) rotate(-.25deg)}50%{transform:scale(1.057) rotate(.25deg)}}
+@keyframes snListenWave{0%{opacity:.57;transform:scale(.91)}100%{opacity:0;transform:scale(1.17)}}
+@keyframes snThinkWave{0%{opacity:.64;transform:scale(.90)}100%{opacity:0;transform:scale(1.22)}}
+@keyframes snDone{0%{transform:scale(.76);filter:brightness(1.8)}56%{transform:scale(1.10);filter:brightness(1.35)}100%{transform:scale(1);filter:brightness(1)}}
+@keyframes snNavBreath{0%,100%{transform:scale(.95)}50%{transform:scale(1.07)}}
+@keyframes snNavOrbitA{to{transform:translate(-50%,-50%) rotate(383deg)}}
+@keyframes snNavOrbitB{to{transform:translate(-50%,-50%) rotate(-391deg)}}
+@keyframes snNavSwirlA{to{transform:translate(-50%,-50%) rotate(360deg)}}
+@keyframes snNavSwirlB{to{transform:translate(-50%,-50%) rotate(-360deg)}}
+
+@media (max-width:390px){
+  .orb-button{width:292px;height:292px}
+  .orb{width:262px;height:262px}
+  .supernova-particles{inset:-16%}
+}
 
 @media (prefers-reduced-motion:reduce){
   .orb,.orb::before,.orb::after,.orb-ring,.orb-ring::before,.orb-ring::after,.orb-core::before,.orb-core::after,
-  .bottom-nav .nav-orb,.bottom-nav .nav-orb::before,.bottom-nav .nav-orb::after,.bottom-nav .nav-orb span::before,.bottom-nav .nav-orb span::after{animation:none!important}
+  .supernova-swirl,.supernova-particles i,.bottom-nav .nav-orb,.bottom-nav .nav-orb::before,.bottom-nav .nav-orb::after,
+  .bottom-nav .nav-orb span::before,.bottom-nav .nav-orb span::after{animation:none!important}
 }
