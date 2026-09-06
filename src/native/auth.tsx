@@ -18,6 +18,7 @@ type AuthContextValue = {
   signUp: (email: string, password: string, fullName?: string) => Promise<'signed_in' | 'confirmation_required'>;
   sendPasswordReset: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 };
 
@@ -100,6 +101,16 @@ export function OneAuthProvider({ children }: PropsWithChildren) {
     async signOut() {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
+    },
+    async deleteAccount() {
+      const { data, error } = await supabase.functions.invoke('delete-account', {
+        body: { confirm: 'DELETE' },
+      });
+      if (error) throw new Error(error.message || 'Eliminazione account non disponibile.');
+      if (!data?.ok) throw new Error(data?.error || 'Eliminazione account non completata.');
+      await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
+      setSession(null);
+      setProfile(null);
     },
     async refreshProfile() {
       setProfile(await loadProfile(session?.user ?? null));
