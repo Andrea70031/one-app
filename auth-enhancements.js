@@ -114,8 +114,9 @@
   };
 
   const loadProductEnhancements = () => {
-    ensureStylesheet("pwa-orb-motion.css?v=3", "orb-motion-style");
-    ensureScript("supernova-orb.js?v=1", "supernova-orb");
+    // Keep the original ONE orb from styles.css. The later Supernova override
+    // produced rendering artefacts on iOS and is intentionally no longer loaded.
+    ensureStylesheet("pwa-mobile-fix.css?v=1", "mobile-layout-fix");
     ensureScript("checklist-enhancements.js?v=1", "checklist");
     ensureStylesheet("integrations-enhancements.css?v=1", "integrations-style");
     ensureScript("integrations-enhancements.js?v=1", "integrations");
