@@ -1,186 +1,274 @@
-/* ONE PWA energy-orb motion layer — mirrors the native visual language without extra libraries. */
+/* ONE PWA orb v2 — restrained premium motion, matched to the approved preview language. */
 .orb-section{overflow:visible}
 .orb-button{overflow:visible}
+
 .orb{
+  width:245px;
+  height:245px;
+  padding:0;
   isolation:isolate;
   overflow:visible;
-  filter:drop-shadow(0 0 22px rgba(90,141,255,.38)) drop-shadow(0 0 42px rgba(167,102,255,.16));
-  animation:oneOrbBreathe 3.8s cubic-bezier(.45,.05,.55,.95) infinite;
-}
-.orb::before{
-  content:"";
-  position:absolute;
-  inset:-24px;
   border-radius:50%;
-  border:1px solid rgba(90,141,255,.22);
-  box-shadow:0 0 24px rgba(66,232,224,.08),inset 0 0 24px rgba(167,102,255,.05);
-  opacity:.55;
-  animation:oneOuterPulse 3.2s ease-in-out infinite;
-  pointer-events:none;
+  filter:drop-shadow(0 0 18px rgba(90,141,255,.24));
+  animation:oneOrbBreath 4.8s ease-in-out infinite;
 }
-.orb::after{
+
+.orb::before{
   content:"";
   position:absolute;
   inset:-14px;
   border-radius:50%;
-  background:conic-gradient(from 45deg,rgba(66,232,224,.12),rgba(90,141,255,.08),rgba(167,102,255,.17),rgba(242,123,196,.11),rgba(255,178,107,.07),rgba(66,232,224,.12));
-  filter:blur(22px);
+  background:radial-gradient(circle,rgba(83,129,255,.12) 0%,rgba(167,102,255,.055) 42%,transparent 72%);
+  filter:blur(9px);
+  opacity:.85;
   z-index:-2;
-  opacity:.82;
-  animation:oneHaloRotate 12s linear infinite;
   pointer-events:none;
+  animation:oneHalo 4.8s ease-in-out infinite;
 }
+
+.orb::after{
+  content:"";
+  position:absolute;
+  inset:-8px;
+  border-radius:50%;
+  border:1px solid rgba(142,167,255,.12);
+  box-shadow:inset 0 0 18px rgba(66,232,224,.025),0 0 16px rgba(167,102,255,.04);
+  z-index:-1;
+  pointer-events:none;
+  animation:oneOuterBreath 4.8s ease-in-out infinite;
+}
+
 .orb-ring{
+  position:absolute;
+  inset:0;
+  border-radius:50%;
   overflow:visible;
-  background:conic-gradient(from 0deg,var(--cyan),var(--blue),var(--violet),var(--pink),#ffb26b,var(--cyan));
-  animation:oneRingRotate 9.2s linear infinite;
-  box-shadow:0 0 18px rgba(66,232,224,.18),0 0 28px rgba(167,102,255,.16);
+  background:conic-gradient(from 14deg,
+    #55efe7 0deg,
+    #54a9ff 78deg,
+    #7d73ff 150deg,
+    #c66eff 220deg,
+    #f28ac6 274deg,
+    #e5d28d 328deg,
+    #55efe7 360deg);
+  animation:oneRing 12s linear infinite;
+  box-shadow:0 0 12px rgba(79,170,255,.22),0 0 20px rgba(178,100,255,.1);
 }
-.orb-ring::before,.orb-ring::after{
-  content:"";
-  position:absolute;
-  left:50%;top:50%;
-  width:108%;height:47%;
-  border-radius:999px;
-  border:1px solid rgba(90,141,255,.44);
-  box-shadow:0 0 12px rgba(90,141,255,.12);
-  transform-origin:center;
-  pointer-events:none;
-}
-.orb-ring::before{
-  transform:translate(-50%,-50%) rotate(20deg);
-  animation:oneOrbitA 7.4s linear infinite;
-}
+
+.orb-ring::before,
 .orb-ring::after{
-  width:101%;height:42%;
-  border-color:rgba(242,123,196,.38);
-  transform:translate(-50%,-50%) rotate(-34deg);
-  animation:oneOrbitB 10.2s linear infinite reverse;
-}
-.orb-core{
-  isolation:isolate;
-  background:
-    radial-gradient(circle at 50% 50%,rgba(18,26,42,.94),rgba(6,9,15,.99) 68%),
-    #06090f;
-  box-shadow:inset 0 0 36px rgba(90,141,255,.07),inset 0 0 80px rgba(167,102,255,.04);
-}
-.orb-core::before,.orb-core::after{
   content:"";
   position:absolute;
-  left:50%;top:50%;
-  width:82%;height:48%;
-  border-radius:48% 52% 55% 45%;
-  transform:translate(-50%,-50%) rotate(18deg);
-  background:linear-gradient(110deg,rgba(66,232,224,.03),rgba(40,121,255,.68),rgba(167,102,255,.48),rgba(242,123,196,.06));
-  filter:blur(13px);
-  opacity:.72;
-  z-index:0;
-  animation:oneSwirlA 7.8s ease-in-out infinite;
+  left:50%;
+  top:50%;
+  border-radius:999px;
   pointer-events:none;
+  opacity:.52;
 }
+
+.orb-ring::before{
+  width:104%;
+  height:40%;
+  border:1px solid rgba(93,169,255,.27);
+  box-shadow:0 0 8px rgba(66,232,224,.055);
+  transform:translate(-50%,-50%) rotate(18deg);
+  animation:oneOrbitA 14s linear infinite;
+}
+
+.orb-ring::after{
+  width:94%;
+  height:34%;
+  border:1px solid rgba(215,111,241,.22);
+  box-shadow:0 0 8px rgba(242,123,196,.045);
+  transform:translate(-50%,-50%) rotate(-31deg);
+  animation:oneOrbitB 18s linear infinite reverse;
+}
+
+.orb-core{
+  position:absolute;
+  inset:6px;
+  border:12px solid #05070c;
+  border-radius:50%;
+  overflow:hidden;
+  display:grid;
+  place-items:center;
+  z-index:1;
+  background:
+    radial-gradient(circle at 35% 70%,rgba(44,160,195,.11),transparent 34%),
+    radial-gradient(circle at 72% 30%,rgba(130,72,185,.105),transparent 34%),
+    radial-gradient(circle at 50% 52%,#0a0e16 0%,#070a10 54%,#05070b 100%);
+  box-shadow:
+    inset 0 0 34px rgba(91,141,255,.055),
+    inset 0 -18px 42px rgba(66,232,224,.025),
+    0 0 0 1px rgba(255,255,255,.025);
+}
+
+.orb-core::before,
 .orb-core::after{
-  width:67%;height:34%;
-  transform:translate(-50%,-50%) rotate(-28deg);
-  background:linear-gradient(105deg,rgba(90,141,255,.03),rgba(66,232,224,.43),rgba(167,102,255,.58),rgba(242,123,196,.08));
-  filter:blur(10px);
-  opacity:.6;
-  animation:oneSwirlB 6.1s ease-in-out infinite reverse;
+  content:"";
+  position:absolute;
+  left:50%;
+  top:50%;
+  border-radius:999px;
+  pointer-events:none;
+  z-index:0;
+  filter:blur(11px);
 }
-.orb-label{position:relative;text-shadow:0 0 12px rgba(255,255,255,.06);z-index:5}
+
+.orb-core::before{
+  width:72%;
+  height:22%;
+  background:linear-gradient(90deg,transparent 0%,rgba(63,201,222,.05) 16%,rgba(74,140,255,.23) 48%,rgba(173,101,255,.17) 72%,transparent 100%);
+  opacity:.72;
+  transform:translate(-50%,-50%) rotate(24deg);
+  animation:oneInnerArcA 9.5s ease-in-out infinite;
+}
+
+.orb-core::after{
+  width:58%;
+  height:16%;
+  background:linear-gradient(90deg,transparent 0%,rgba(112,147,255,.035) 18%,rgba(117,97,255,.17) 48%,rgba(224,115,201,.12) 73%,transparent 100%);
+  opacity:.6;
+  transform:translate(-50%,-50%) rotate(-34deg);
+  animation:oneInnerArcB 12s ease-in-out infinite reverse;
+}
+
+.orb-label{
+  position:relative;
+  z-index:7;
+  color:#f7f8fb;
+  text-shadow:0 0 12px rgba(255,255,255,.035);
+}
+
 .wave{z-index:6}
-.particles{z-index:4}
+.particles{z-index:5}
+.particle{opacity:.48!important;box-shadow:0 0 6px rgba(201,255,255,.35)!important}
 
 .orb.listening{
-  animation:oneListenPulse 1.25s ease-in-out infinite;
-  filter:drop-shadow(0 0 26px rgba(66,232,224,.48)) drop-shadow(0 0 46px rgba(90,141,255,.2));
+  filter:drop-shadow(0 0 21px rgba(66,232,224,.31));
+  animation:oneListenBreath 1.45s ease-in-out infinite;
 }
-.orb.listening::before{animation:oneRipple 1.15s cubic-bezier(.2,.7,.2,1) infinite;border-color:rgba(66,232,224,.48)}
-.orb.listening .orb-ring{animation-duration:4.1s}
-.orb.listening .orb-ring::before{border-color:rgba(66,232,224,.62);animation-duration:3.6s}
-.orb.listening .orb-core::before{animation-duration:3.9s;opacity:.9}
-.orb.listening .orb-core::after{animation-duration:3.1s;opacity:.8}
+.orb.listening::after{border-color:rgba(66,232,224,.24);animation:oneListeningRipple 1.45s ease-out infinite}
+.orb.listening .orb-ring{animation-duration:7s}
+.orb.listening .orb-ring::before{border-color:rgba(66,232,224,.36);opacity:.72;animation-duration:8s}
+.orb.listening .orb-core::before{opacity:.9;animation-duration:5s}
+.orb.listening .orb-core::after{opacity:.72;animation-duration:6.2s}
 
 .orb.thinking{
-  animation:oneThinkingPulse 1.8s ease-in-out infinite;
-  filter:drop-shadow(0 0 30px rgba(90,141,255,.48)) drop-shadow(0 0 54px rgba(167,102,255,.24));
+  filter:drop-shadow(0 0 23px rgba(108,117,255,.32));
+  animation:oneThinkBreath 2s ease-in-out infinite;
 }
-.orb.thinking::before{animation:oneRipple 1.5s cubic-bezier(.2,.7,.2,1) infinite;border-color:rgba(167,102,255,.46)}
-.orb.thinking .orb-ring{animation-duration:1.65s}
-.orb.thinking .orb-ring::before{animation-duration:2s}
-.orb.thinking .orb-ring::after{animation-duration:2.7s}
-.orb.thinking .orb-core::before{animation-duration:1.9s;opacity:1;filter:blur(10px)}
-.orb.thinking .orb-core::after{animation-duration:1.55s;opacity:.9}
+.orb.thinking::after{border-color:rgba(167,102,255,.24);animation:oneThinkingRipple 1.8s ease-out infinite}
+.orb.thinking .orb-ring{animation-duration:3.2s}
+.orb.thinking .orb-ring::before{opacity:.65;animation-duration:4.5s}
+.orb.thinking .orb-ring::after{opacity:.6;animation-duration:5.4s}
+.orb.thinking .orb-core::before{opacity:.95;animation-duration:2.8s}
+.orb.thinking .orb-core::after{opacity:.84;animation-duration:3.4s}
 
-.orb.done{animation:oneDonePop .68s cubic-bezier(.18,.9,.24,1.22) both}
-.orb.done::before{border-color:rgba(70,227,183,.44);box-shadow:0 0 26px rgba(70,227,183,.15)}
+.orb.done{animation:oneDone .58s cubic-bezier(.2,.86,.27,1.18) both}
+.orb.done::after{border-color:rgba(70,227,183,.3)}
+.orb.done .orb-ring{background:conic-gradient(from 0deg,#46e3b7,#69eed2,#46e3b7)}
 
+/* compact orb in the bottom navigation */
 .bottom-nav .nav-orb{
   position:relative;
+  width:58px;
+  height:58px;
+  padding:4px;
+  border-radius:50%;
   overflow:visible;
   isolation:isolate;
-  background:conic-gradient(from 20deg,var(--cyan),var(--blue),var(--violet),var(--pink),var(--cyan));
-  animation:oneNavBreathe 2.9s ease-in-out infinite,oneNavSpin 8s linear infinite;
-  box-shadow:0 0 18px rgba(90,141,255,.25),0 0 28px rgba(167,102,255,.12);
+  background:conic-gradient(from 12deg,#55efe7,#54a9ff,#8272ff,#c66eff,#ef84c6,#55efe7);
+  box-shadow:0 0 13px rgba(90,141,255,.18),0 0 20px rgba(167,102,255,.08);
+  animation:oneNavBreath 3.8s ease-in-out infinite;
 }
-.bottom-nav .nav-orb::before,.bottom-nav .nav-orb::after{
+
+.bottom-nav .nav-orb::before,
+.bottom-nav .nav-orb::after{
   content:"";
   position:absolute;
-  left:50%;top:50%;
+  left:50%;
+  top:50%;
   border-radius:999px;
   pointer-events:none;
   z-index:-1;
 }
+
 .bottom-nav .nav-orb::before{
-  width:64px;height:28px;
-  border:1px solid rgba(66,232,224,.42);
+  width:62px;
+  height:24px;
+  border:1px solid rgba(91,174,255,.25);
   transform:translate(-50%,-50%) rotate(22deg);
-  animation:oneNavOrbit 4.8s linear infinite;
-}
-.bottom-nav .nav-orb::after{
-  width:61px;height:25px;
-  border:1px solid rgba(242,123,196,.34);
-  transform:translate(-50%,-50%) rotate(-32deg);
-  animation:oneNavOrbitReverse 6.3s linear infinite;
-}
-.bottom-nav .nav-orb span{
-  position:relative;
-  overflow:hidden;
-  z-index:1;
-  background:
-    radial-gradient(circle at 38% 34%,rgba(66,232,224,.25),transparent 28%),
-    radial-gradient(circle at 68% 64%,rgba(167,102,255,.27),transparent 35%),
-    #06090e;
-}
-.bottom-nav .nav-orb span::before{
-  content:"";
-  position:absolute;
-  width:72%;height:34%;
-  left:14%;top:33%;
-  border-radius:999px;
-  background:linear-gradient(90deg,rgba(66,232,224,.05),rgba(90,141,255,.55),rgba(167,102,255,.52),rgba(242,123,196,.05));
-  filter:blur(5px);
-  animation:oneNavSwirl 4.2s linear infinite;
+  animation:oneNavOrbitA 9s linear infinite;
 }
 
-@keyframes oneOrbBreathe{0%,100%{transform:scale(.985)}50%{transform:scale(1.024)}}
-@keyframes oneListenPulse{0%,100%{transform:scale(.985)}50%{transform:scale(1.045)}}
-@keyframes oneThinkingPulse{0%,100%{transform:scale(.995)}50%{transform:scale(1.025)}}
-@keyframes oneOuterPulse{0%,100%{transform:scale(.96);opacity:.3}50%{transform:scale(1.045);opacity:.66}}
-@keyframes oneRipple{0%{transform:scale(.78);opacity:.48}72%{opacity:.1}100%{transform:scale(1.14);opacity:0}}
-@keyframes oneRingRotate{to{transform:rotate(360deg)}}
-@keyframes oneHaloRotate{to{transform:rotate(-360deg)}}
-@keyframes oneOrbitA{to{transform:translate(-50%,-50%) rotate(380deg)}}
-@keyframes oneOrbitB{to{transform:translate(-50%,-50%) rotate(326deg)}}
-@keyframes oneSwirlA{0%,100%{transform:translate(-52%,-49%) rotate(18deg) scale(.92,1)}50%{transform:translate(-45%,-54%) rotate(202deg) scale(1.06,.92)}}
-@keyframes oneSwirlB{0%,100%{transform:translate(-48%,-51%) rotate(-28deg) scale(.9,1.05)}50%{transform:translate(-55%,-46%) rotate(148deg) scale(1.08,.9)}}
-@keyframes oneDonePop{0%{transform:scale(.72)}62%{transform:scale(1.08)}100%{transform:scale(1)}}
-@keyframes oneNavBreathe{0%,100%{scale:.96}50%{scale:1.05}}
-@keyframes oneNavSpin{to{rotate:360deg}}
-@keyframes oneNavOrbit{to{transform:translate(-50%,-50%) rotate(382deg)}}
-@keyframes oneNavOrbitReverse{to{transform:translate(-50%,-50%) rotate(-392deg)}}
-@keyframes oneNavSwirl{to{transform:rotate(360deg)}}
+.bottom-nav .nav-orb::after{
+  width:57px;
+  height:21px;
+  border:1px solid rgba(213,112,238,.2);
+  transform:translate(-50%,-50%) rotate(-32deg);
+  animation:oneNavOrbitB 12s linear infinite reverse;
+}
+
+.bottom-nav .nav-orb span{
+  position:relative;
+  display:block;
+  width:100%;
+  height:100%;
+  border-radius:50%;
+  overflow:hidden;
+  background:
+    radial-gradient(circle at 33% 68%,rgba(66,232,224,.10),transparent 32%),
+    radial-gradient(circle at 72% 31%,rgba(167,102,255,.11),transparent 34%),
+    #06090e;
+}
+
+.bottom-nav .nav-orb span::before,
+.bottom-nav .nav-orb span::after{
+  content:"";
+  position:absolute;
+  left:50%;
+  top:50%;
+  border-radius:999px;
+  filter:blur(3px);
+}
+
+.bottom-nav .nav-orb span::before{
+  width:72%;
+  height:11%;
+  background:linear-gradient(90deg,transparent,rgba(75,169,255,.35),rgba(176,103,255,.23),transparent);
+  transform:translate(-50%,-50%) rotate(24deg);
+  animation:oneNavInnerA 6.5s ease-in-out infinite;
+}
+
+.bottom-nav .nav-orb span::after{
+  width:58%;
+  height:9%;
+  background:linear-gradient(90deg,transparent,rgba(66,232,224,.18),rgba(220,112,220,.18),transparent);
+  transform:translate(-50%,-50%) rotate(-33deg);
+  animation:oneNavInnerB 8s ease-in-out infinite reverse;
+}
+
+@keyframes oneOrbBreath{0%,100%{transform:scale(.992)}50%{transform:scale(1.018)}}
+@keyframes oneHalo{0%,100%{opacity:.62;transform:scale(.98)}50%{opacity:.92;transform:scale(1.035)}}
+@keyframes oneOuterBreath{0%,100%{opacity:.4;transform:scale(.985)}50%{opacity:.72;transform:scale(1.025)}}
+@keyframes oneRing{to{transform:rotate(360deg)}}
+@keyframes oneOrbitA{to{transform:translate(-50%,-50%) rotate(378deg)}}
+@keyframes oneOrbitB{to{transform:translate(-50%,-50%) rotate(329deg)}}
+@keyframes oneInnerArcA{0%,100%{transform:translate(-54%,-48%) rotate(24deg) scaleX(.92)}50%{transform:translate(-45%,-54%) rotate(204deg) scaleX(1.08)}}
+@keyframes oneInnerArcB{0%,100%{transform:translate(-47%,-52%) rotate(-34deg) scaleX(.94)}50%{transform:translate(-55%,-45%) rotate(146deg) scaleX(1.06)}}
+@keyframes oneListenBreath{0%,100%{transform:scale(.992)}50%{transform:scale(1.034)}}
+@keyframes oneThinkBreath{0%,100%{transform:scale(.997)}50%{transform:scale(1.022)}}
+@keyframes oneListeningRipple{0%{opacity:.42;transform:scale(.92)}100%{opacity:0;transform:scale(1.11)}}
+@keyframes oneThinkingRipple{0%{opacity:.36;transform:scale(.94)}100%{opacity:0;transform:scale(1.09)}}
+@keyframes oneDone{0%{transform:scale(.82)}68%{transform:scale(1.045)}100%{transform:scale(1)}}
+@keyframes oneNavBreath{0%,100%{transform:scale(.97)}50%{transform:scale(1.035)}}
+@keyframes oneNavOrbitA{to{transform:translate(-50%,-50%) rotate(382deg)}}
+@keyframes oneNavOrbitB{to{transform:translate(-50%,-50%) rotate(-392deg)}}
+@keyframes oneNavInnerA{0%,100%{transform:translate(-54%,-49%) rotate(24deg)}50%{transform:translate(-45%,-53%) rotate(204deg)}}
+@keyframes oneNavInnerB{0%,100%{transform:translate(-47%,-51%) rotate(-33deg)}50%{transform:translate(-55%,-46%) rotate(147deg)}}
 
 @media (prefers-reduced-motion:reduce){
   .orb,.orb::before,.orb::after,.orb-ring,.orb-ring::before,.orb-ring::after,.orb-core::before,.orb-core::after,
-  .bottom-nav .nav-orb,.bottom-nav .nav-orb::before,.bottom-nav .nav-orb::after,.bottom-nav .nav-orb span::before{animation:none!important}
+  .bottom-nav .nav-orb,.bottom-nav .nav-orb::before,.bottom-nav .nav-orb::after,.bottom-nav .nav-orb span::before,.bottom-nav .nav-orb span::after{animation:none!important}
 }
