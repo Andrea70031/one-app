@@ -106,7 +106,11 @@ export async function syncOneNotifications(reminders: ReminderLike[]) {
           body: item.note || 'Promemoria ONE',
           data: { [MANAGED_KEY]: true, kind: 'reminder', reminderId: item.id },
         },
-        trigger: date,
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          date,
+          channelId: Platform.OS === 'android' ? 'one' : undefined,
+        },
       });
     }
 
@@ -120,7 +124,12 @@ export async function syncOneNotifications(reminders: ReminderLike[]) {
             : 'Apri ONE per il briefing della giornata.',
           data: { [MANAGED_KEY]: true, kind: 'briefing' },
         },
-        trigger: { hour: prefs.briefingHour, minute: 0, repeats: true } as any,
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DAILY,
+          hour: prefs.briefingHour,
+          minute: 0,
+          channelId: Platform.OS === 'android' ? 'one' : undefined,
+        },
       });
     }
   } catch {
