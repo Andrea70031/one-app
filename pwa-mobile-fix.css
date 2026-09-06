@@ -1,0 +1,28 @@
+/* ONE PWA mobile layout guard.
+   Some iOS standalone/browser configurations can expose a viewport wider than
+   the app shell max-width, leaving a visible black strip. On touch devices ONE
+   must always occupy the full viewport width. */
+@media (hover: none) and (pointer: coarse) {
+  html,
+  body {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .app-shell {
+    width: 100vw;
+    max-width: none;
+    margin-left: 0;
+    margin-right: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-shell {
+    width: 100%;
+    max-width: none;
+    margin-left: 0;
+    margin-right: 0;
+  }
+}
