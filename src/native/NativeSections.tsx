@@ -1,10 +1,12 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
+  Linking,
   Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   View,
@@ -13,10 +15,27 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { colors } from '../theme/colors';
+import { useOneAuth } from './auth';
 import type { NativeDashboard, OneReminder } from './oneData';
 import { setReminderCompleted } from './oneData';
+import {
+  loadNotificationPreferences,
+  OneNotificationPreferences,
+  setBriefingEnabled,
+  setNotificationsEnabled,
+} from './notifications';
 
 export type NativeSection = 'home' | 'spaces' | 'recall' | 'reminders' | 'account';
+
+const PRIVACY_URL = 'https://andrea70031.github.io/one-app/privacy.html';
+const TERMS_URL = 'https://andrea70031.github.io/one-app/terms.html';
+const SUPPORT_URL = 'https://andrea70031.github.io/one-app/support.html';
+
+const defaultNotificationPrefs: OneNotificationPreferences = {
+  enabled: false,
+  briefing: true,
+  briefingHour: 8,
+};
 
 type SharedProps = {
   dashboard: NativeDashboard;
@@ -249,12 +268,91 @@ export function NativeRemindersScreen(props: ReminderProps) {
 }
 
 export function NativeAccountScreen(props: AccountProps) {
+  const { deleteAccount } = useOneAuth();
+  const [notificationPrefs, setNotificationPrefs] = useState<OneNotificationPreferences>(defaultNotificationPrefs);
+  const [notificationBusy, setNotificationBusy] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const openReminders = props.dashboard.reminders.filter((item) => !item.completed).length;
   const name = props.fullName?.trim() || 'Account ONE';
 
+  useEffect(() => {
+    loadNotificationPreferences().then(setNotificationPrefs).catch(() => undefined);
+  }, []);
+
+  const openUrl = async (url: string) => {
+    try {
+      await Linking.openURL(url);
+    } catch {
+      Alert.alert('ONE', 'Non riesco ad aprire questa pagina.');
+    }
+  };
+
+  const toggleNotifications = async (enabled: boolean) => {
+    if (notificationBusy) return;
+    setNotificationBusy(true);
+    try {
+      const next = await setNotificationsEnabled(enabled, props.dashboard.reminders);
+      setNotificationPrefs(next);
+      if (enabled && !next.enabled) {
+        Alert.alert('Notifiche non abilitate', 'Puoi abilitarle in Impostazioni iOS → ONE → Notifiche.');
+      }
+    } finally {
+      setNotificationBusy(false);
+    }
+  };
+
+  const toggleBriefing = async (enabled: boolean) => {
+    if (notificationBusy) return;
+    setNotificationBusy(true);
+    try {
+      const next = await setBriefingEnabled(enabled, props.dashboard.reminders);
+      setNotificationPrefs(next);
+      if (enabled && !next.briefing) {
+        Alert.alert('Briefing non attivato', 'Abilita prima le notifiche di ONE nelle impostazioni del dispositivo.');
+      }
+    } finally {
+      setNotificationBusy(false);
+    }
+  };
+
+  const confirmDeleteAccount = () => {
+    if (deleting) return;
+    Alert.alert(
+      'Elimina account',
+      'Questa operazione elimina definitivamente il tuo account ONE, Recall, promemoria e dati personali. Gli Spazi condivisi possono essere trasferiti a un altro membro.',
+      [
+        { text: 'Annulla', style: 'cancel' },
+        {
+          text: 'Continua',
+          style: 'destructive',
+          onPress: () => Alert.alert(
+            'Conferma definitiva',
+            'L’eliminazione non può essere annullata. Vuoi eliminare definitivamente il tuo account?',
+            [
+              { text: 'Annulla', style: 'cancel' },
+              {
+                text: 'Elimina definitivamente',
+                style: 'destructive',
+                onPress: async () => {
+                  setDeleting(true);
+                  try {
+                    await deleteAccount();
+                  } catch (error) {
+                    setDeleting(false);
+                    Alert.alert('Eliminazione account', error instanceof Error ? error.message : 'Operazione non completata.');
+                  }
+                },
+              },
+            ],
+          ),
+        },
+      ],
+    );
+  };
+
   return (
     <ScreenFrame {...props}>
-      <ScreenTitle eyebrow="ACCOUNT" title="Il tuo spazio personale" subtitle="Profilo, sincronizzazione e accesso alle funzioni principali di ONE." />
+      <ScreenTitle eyebrow="ACCOUNT" title="Il tuo spazio personale" subtitle="Profilo, notifiche, privacy e controlli del tuo account ONE." />
 
       <View style={styles.profileCard}>
         <LinearGradient colors={[colors.cyan, colors.violet, colors.pink]} style={styles.profileAvatarGradient}>
@@ -272,15 +370,47 @@ export function NativeAccountScreen(props: AccountProps) {
         <SummaryMetric value={String(props.dashboard.sites.length)} label="Spazi" />
       </View>
 
+      <Text style={styles.groupLabel}>NOTIFICHE</Text>
+      <View style={styles.settingsCard}>
+        <ToggleRow
+          icon="notifications-outline"
+          title="Notifiche ONE"
+          copy="Scadenze e promemoria sul dispositivo"
+          value={notificationPrefs.enabled}
+          disabled={notificationBusy}
+          onValueChange={toggleNotifications}
+        />
+        <ToggleRow
+          icon="sunny-outline"
+          title="Briefing giornaliero"
+          copy={`Riepilogo ogni mattina alle ${String(notificationPrefs.briefingHour).padStart(2, '0')}:00`}
+          value={notificationPrefs.enabled && notificationPrefs.briefing}
+          disabled={notificationBusy}
+          onValueChange={toggleBriefing}
+        />
+      </View>
+
+      <Text style={styles.groupLabel}>ONE</Text>
       <View style={styles.settingsCard}>
         <SettingsRow icon="checkmark-done-outline" title="Promemoria" copy={`${openReminders} da completare`} onPress={props.onOpenReminders} />
         <SettingsRow icon="cloud-done-outline" title="Sincronizza adesso" copy="Aggiorna dati e attività" onPress={props.onRefresh} />
-        <SettingsRow icon="shield-checkmark-outline" title="Privacy e sicurezza" copy="In preparazione per la release" />
+        <SettingsRow icon="help-circle-outline" title="Supporto" copy="Guida e segnalazione problemi" onPress={() => openUrl(SUPPORT_URL)} />
+      </View>
+
+      <Text style={styles.groupLabel}>PRIVACY E TERMINI</Text>
+      <View style={styles.settingsCard}>
+        <SettingsRow icon="shield-checkmark-outline" title="Privacy" copy="Come ONE tratta i dati" onPress={() => openUrl(PRIVACY_URL)} />
+        <SettingsRow icon="document-text-outline" title="Termini di utilizzo" copy="Regole e condizioni del servizio" onPress={() => openUrl(TERMS_URL)} />
       </View>
 
       <Pressable style={styles.signOutButton} onPress={props.onSignOut}>
         <Ionicons name="log-out-outline" size={19} color="#FF8D9C" />
         <Text style={styles.signOutText}>Esci dall’account</Text>
+      </Pressable>
+
+      <Pressable disabled={deleting} style={[styles.deleteAccountButton, deleting && styles.disabled]} onPress={confirmDeleteAccount}>
+        <Ionicons name="trash-outline" size={18} color="#FF6578" />
+        <Text style={styles.deleteAccountText}>{deleting ? 'Eliminazione in corso…' : 'Elimina account definitivamente'}</Text>
       </Pressable>
     </ScreenFrame>
   );
@@ -294,13 +424,36 @@ function Segment({ label, active, onPress }: { label: string; active: boolean; o
   return <Pressable onPress={onPress} style={[styles.segment, active && styles.segmentActive]}><Text style={[styles.segmentText, active && styles.segmentTextActive]}>{label}</Text></Pressable>;
 }
 
-function SettingsRow({ icon, title, copy, onPress }: { icon: keyof typeof Ionicons.glyphMap; title: string; copy: string; onPress?: () => void }) {
+function SettingsRow({ icon, title, copy, onPress }: { icon: keyof typeof Ionicons.glyphMap; title: string; copy: string; onPress: () => void | Promise<void> }) {
   return (
-    <Pressable disabled={!onPress} onPress={onPress} style={({ pressed }) => [styles.settingsRow, pressed && onPress ? styles.pressed : null]}>
+    <Pressable onPress={onPress} style={({ pressed }) => [styles.settingsRow, pressed && styles.pressed]}>
       <View style={styles.settingsIcon}><Ionicons name={icon} size={19} color={colors.cyan} /></View>
       <View style={{ flex: 1 }}><Text style={styles.rowTitle}>{title}</Text><Text style={styles.rowCopy}>{copy}</Text></View>
-      {onPress ? <Ionicons name="chevron-forward" size={17} color={colors.textMuted} /> : <Text style={styles.comingSoon}>PRESTO</Text>}
+      <Ionicons name="chevron-forward" size={17} color={colors.textMuted} />
     </Pressable>
+  );
+}
+
+function ToggleRow({ icon, title, copy, value, disabled, onValueChange }: {
+  icon: keyof typeof Ionicons.glyphMap;
+  title: string;
+  copy: string;
+  value: boolean;
+  disabled: boolean;
+  onValueChange: (value: boolean) => void | Promise<void>;
+}) {
+  return (
+    <View style={styles.settingsRow}>
+      <View style={styles.settingsIcon}><Ionicons name={icon} size={19} color={colors.cyan} /></View>
+      <View style={{ flex: 1 }}><Text style={styles.rowTitle}>{title}</Text><Text style={styles.rowCopy}>{copy}</Text></View>
+      <Switch
+        value={value}
+        disabled={disabled}
+        onValueChange={onValueChange}
+        trackColor={{ false: 'rgba(255,255,255,0.12)', true: 'rgba(66,232,224,0.36)' }}
+        thumbColor={value ? colors.cyan : '#A1A8B4'}
+      />
+    </View>
   );
 }
 
@@ -371,12 +524,15 @@ const styles = StyleSheet.create({
   profileAvatarInner: { flex: 1, borderRadius: 29, backgroundColor: '#080C12', alignItems: 'center', justifyContent: 'center' },
   profileName: { color: colors.text, fontSize: 17, fontWeight: '700' },
   profileEmail: { color: colors.textMuted, fontSize: 12.5, marginTop: 4 },
-  settingsCard: { marginTop: 16, borderRadius: 22, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, overflow: 'hidden' },
+  groupLabel: { marginTop: 22, marginBottom: 8, marginLeft: 3, color: colors.textMuted, fontSize: 9.5, letterSpacing: 1.3, fontWeight: '800' },
+  settingsCard: { borderRadius: 22, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, overflow: 'hidden' },
   settingsRow: { minHeight: 72, paddingHorizontal: 14, flexDirection: 'row', alignItems: 'center', gap: 12, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
   settingsIcon: { width: 38, height: 38, borderRadius: 13, backgroundColor: 'rgba(66,232,224,0.08)', alignItems: 'center', justifyContent: 'center' },
-  comingSoon: { color: colors.textMuted, fontSize: 9, fontWeight: '800', letterSpacing: 0.7 },
-  signOutButton: { marginTop: 16, minHeight: 54, borderRadius: 18, borderWidth: 1, borderColor: 'rgba(255,141,156,0.22)', backgroundColor: 'rgba(255,141,156,0.06)', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9 },
+  signOutButton: { marginTop: 22, minHeight: 54, borderRadius: 18, borderWidth: 1, borderColor: 'rgba(255,141,156,0.22)', backgroundColor: 'rgba(255,141,156,0.06)', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9 },
   signOutText: { color: '#FF8D9C', fontSize: 13.5, fontWeight: '600' },
+  deleteAccountButton: { marginTop: 10, minHeight: 52, borderRadius: 18, borderWidth: 1, borderColor: 'rgba(255,101,120,0.28)', backgroundColor: 'rgba(255,101,120,0.08)', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 9 },
+  deleteAccountText: { color: '#FF6578', fontSize: 12.5, fontWeight: '600' },
+  disabled: { opacity: 0.5 },
   emptyState: { minHeight: 170, borderRadius: 22, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface, alignItems: 'center', justifyContent: 'center', padding: 24 },
   emptyIcon: { width: 48, height: 48, borderRadius: 16, backgroundColor: 'rgba(66,232,224,0.08)', alignItems: 'center', justifyContent: 'center' },
   emptyTitle: { color: colors.text, fontSize: 15, fontWeight: '600', marginTop: 12 },
