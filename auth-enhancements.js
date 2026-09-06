@@ -114,7 +114,8 @@
   };
 
   const loadProductEnhancements = () => {
-    ensureStylesheet("pwa-orb-motion.css?v=2", "orb-motion-style");
+    ensureStylesheet("pwa-orb-motion.css?v=3", "orb-motion-style");
+    ensureScript("supernova-orb.js?v=1", "supernova-orb");
     ensureScript("checklist-enhancements.js?v=1", "checklist");
     ensureStylesheet("integrations-enhancements.css?v=1", "integrations-style");
     ensureScript("integrations-enhancements.js?v=1", "integrations");
