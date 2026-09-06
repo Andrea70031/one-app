@@ -35,12 +35,17 @@ import { addOneActivity, dashboardRecentItems, loadNativeDashboard, NativeDashbo
 
 const stateSequence: OrbState[] = ['idle', 'activating', 'listening', 'thinking', 'done'];
 const emptyDashboard: NativeDashboard = { activities: [], reminders: [], memories: [], sites: [] };
+const MAX_IMAGES = 6;
+
+function captureId(prefix: string) {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
 
 export function NativeHome() {
   const { user, profile, signOut } = useOneAuth();
   const [orbState, setOrbState] = useState<OrbState>('idle');
   const [input, setInput] = useState('');
-  const [capture, setCapture] = useState<CaptureItem | null>(null);
+  const [captures, setCaptures] = useState<CaptureItem[]>([]);
   const [isRecording, setIsRecording] = useState(false);
   const [dashboard, setDashboard] = useState<NativeDashboard>(emptyDashboard);
   const [refreshing, setRefreshing] = useState(false);
@@ -51,6 +56,8 @@ export function NativeHome() {
   const index = useMemo(() => stateSequence.indexOf(orbState), [orbState]);
   const recentItems = useMemo(() => dashboardRecentItems(dashboard), [dashboard]);
   const openReminders = useMemo(() => dashboard.reminders.filter((item) => !item.completed).length, [dashboard.reminders]);
+  const imageCount = useMemo(() => captures.filter((item) => item.kind === 'camera' || item.kind === 'photo').length, [captures]);
+  const hasDraft = Boolean(input.trim() || captures.length);
 
   const firstName = useMemo(() => {
     const fullName = profile?.full_name?.trim();
@@ -91,28 +98,71 @@ export function NativeHome() {
     if (next) setOrbState(next);
   };
 
-  const finishCapture = (item: CaptureItem) => {
-    setCapture(item);
+  const addCaptures = (items: CaptureItem[]) => {
+    setCaptures((current) => {
+      let next = [...current];
+      for (const item of items) {
+        if (item.kind === 'camera' || item.kind === 'photo') {
+          const count = next.filter((entry) => entry.kind === 'camera' || entry.kind === 'photo').length;
+          if (count < MAX_IMAGES) next.push(item);
+          continue;
+        }
+        if (item.kind === 'document') next = [...next.filter((entry) => entry.kind !== 'document'), item];
+        if (item.kind === 'audio') next = [...next.filter((entry) => entry.kind !== 'audio'), item];
+      }
+      return next;
+    });
     setOrbState('done');
   };
 
+  const removeCapture = (id: string) => {
+    setCaptures((current) => current.filter((item) => item.id !== id));
+  };
+
   const takePhoto = async () => {
+    if (imageCount >= MAX_IMAGES) return Alert.alert('Limite immagini', `ONE può analizzare fino a ${MAX_IMAGES} immagini nella stessa richiesta.`);
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) return Alert.alert('Fotocamera non disponibile', 'Consenti a ONE di usare la fotocamera nelle impostazioni.');
-    const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.9, allowsEditing: false });
+    const result = await ImagePicker.launchCameraAsync({ mediaTypes: ['images'], quality: 0.78, base64: true, allowsEditing: false });
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0];
-      finishCapture({ kind: 'camera', uri: asset.uri, name: asset.fileName ?? 'Foto scattata', detail: 'Immagine pronta per ONE' });
+      addCaptures([{
+        id: captureId('camera'),
+        kind: 'camera',
+        uri: asset.uri,
+        name: asset.fileName ?? 'Foto scattata.jpg',
+        detail: 'Foto pronta per l’analisi AI',
+        mimeType: asset.base64 ? 'image/jpeg' : asset.mimeType ?? 'image/jpeg',
+        base64: asset.base64 ?? undefined,
+        size: asset.fileSize ?? undefined,
+      }]);
     }
   };
 
   const pickPhoto = async () => {
+    const remaining = MAX_IMAGES - imageCount;
+    if (remaining <= 0) return Alert.alert('Limite immagini', `Rimuovi una foto prima di aggiungerne altre. Il limite è ${MAX_IMAGES}.`);
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) return Alert.alert('Foto non disponibili', 'Consenti a ONE di accedere alle foto nelle impostazioni.');
-    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.9, allowsMultipleSelection: false });
-    if (!result.canceled && result.assets[0]) {
-      const asset = result.assets[0];
-      finishCapture({ kind: 'photo', uri: asset.uri, name: asset.fileName ?? 'Immagine', detail: 'Immagine pronta per ONE' });
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.78,
+      base64: true,
+      allowsMultipleSelection: true,
+      selectionLimit: remaining,
+    });
+    if (!result.canceled) {
+      const items: CaptureItem[] = result.assets.map((asset, position) => ({
+        id: captureId(`photo-${position}`),
+        kind: 'photo',
+        uri: asset.uri,
+        name: asset.fileName ?? `Immagine ${position + 1}.jpg`,
+        detail: 'Foto pronta per l’analisi AI',
+        mimeType: asset.base64 ? 'image/jpeg' : asset.mimeType ?? 'image/jpeg',
+        base64: asset.base64 ?? undefined,
+        size: asset.fileSize ?? undefined,
+      }));
+      if (items.length) addCaptures(items);
     }
   };
 
@@ -120,7 +170,15 @@ export function NativeHome() {
     const result = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true, multiple: false });
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0];
-      finishCapture({ kind: 'document', uri: asset.uri, name: asset.name, detail: asset.mimeType ?? 'Documento selezionato' });
+      addCaptures([{
+        id: captureId('document'),
+        kind: 'document',
+        uri: asset.uri,
+        name: asset.name,
+        detail: asset.mimeType ? `${asset.mimeType} · pronto per ONE` : 'Documento pronto per ONE',
+        mimeType: asset.mimeType ?? undefined,
+        size: asset.size ?? undefined,
+      }]);
     }
   };
 
@@ -137,7 +195,15 @@ export function NativeHome() {
       } else {
         await recorder.stop();
         setIsRecording(false);
-        finishCapture({ kind: 'audio', uri: recorder.uri ?? undefined, name: 'Registrazione vocale', detail: 'Audio acquisito da ONE' });
+        if (!recorder.uri) throw new Error('Audio non disponibile');
+        addCaptures([{
+          id: captureId('audio'),
+          kind: 'audio',
+          uri: recorder.uri,
+          name: 'Registrazione vocale.m4a',
+          detail: 'ONE la trascriverà prima di rispondere',
+          mimeType: 'audio/mp4',
+        }]);
       }
     } catch {
       setIsRecording(false);
@@ -146,19 +212,21 @@ export function NativeHome() {
     }
   };
 
-  const submitText = async () => {
+  const submitRequest = async () => {
     const text = input.trim();
-    if (!text || submitting || !user) {
-      if (!text) setOrbState('activating');
+    if ((!text && !captures.length) || submitting || !user) {
+      if (!text && !captures.length) setOrbState('activating');
       return;
     }
+
     setSubmitting(true);
     setOrbState('thinking');
     setAiResult(null);
     try {
-      const result = await askOneNative({ text });
+      const result = await askOneNative({ text, attachments: captures });
       setAiResult(result);
       setInput('');
+      setCaptures([]);
       setOrbState('done');
       await addOneActivity(user.id, result.memory_title || 'Richiesta a ONE', result.memory_summary || result.summary.slice(0, 240), 'ai');
       await refreshDashboard(true);
@@ -176,6 +244,9 @@ export function NativeHome() {
       { text: 'Esci', style: 'destructive', onPress: () => signOut().catch((error) => Alert.alert('Logout', error.message)) },
     ]);
   };
+
+  const composerAction = isRecording ? toggleRecording : hasDraft ? submitRequest : toggleRecording;
+  const composerIcon: keyof typeof Ionicons.glyphMap = isRecording ? 'stop' : hasDraft ? 'arrow-up' : 'mic-outline';
 
   return (
     <View style={styles.root}>
@@ -211,15 +282,28 @@ export function NativeHome() {
             <TextInput
               value={input}
               onChangeText={setInput}
-              onSubmitEditing={submitText}
-              placeholder={submitting ? 'ONE sta pensando…' : 'Chiedi qualsiasi cosa…'}
+              onSubmitEditing={submitRequest}
+              placeholder={submitting ? 'ONE sta analizzando…' : captures.length ? 'Aggiungi una richiesta (opzionale)…' : 'Chiedi qualsiasi cosa…'}
               placeholderTextColor="#6F7786"
               style={styles.input}
               returnKeyType="send"
               editable={!submitting}
             />
-            <Pressable onPress={toggleRecording} style={[styles.micButton, isRecording && styles.micButtonRecording]}>
-              <Ionicons name={isRecording ? 'stop' : 'mic-outline'} size={19} color={isRecording ? colors.green : colors.text} />
+            <Pressable
+              onPress={composerAction}
+              disabled={submitting}
+              style={[
+                styles.micButton,
+                isRecording && styles.micButtonRecording,
+                hasDraft && !isRecording && styles.sendButton,
+                submitting && styles.composerButtonDisabled,
+              ]}
+            >
+              <Ionicons
+                name={submitting ? 'sparkles-outline' : composerIcon}
+                size={19}
+                color={isRecording ? colors.green : hasDraft ? colors.cyan : colors.text}
+              />
             </Pressable>
           </View>
 
@@ -230,7 +314,18 @@ export function NativeHome() {
             <QuickAction icon={isRecording ? 'stop-circle-outline' : 'mic-outline'} label={isRecording ? 'Stop' : 'Parla'} onPress={toggleRecording} />
           </View>
 
-          {capture && <CapturePreview item={capture} />}
+          {captures.length > 0 && (
+            <View style={styles.attachmentsBlock}>
+              <View style={styles.attachmentsHeader}>
+                <Text style={styles.attachmentsTitle}>Allegati per ONE</Text>
+                <Text style={styles.attachmentsCount}>{captures.length}</Text>
+              </View>
+              {captures.map((item) => (
+                <CapturePreview key={item.id} item={item} onRemove={() => removeCapture(item.id)} />
+              ))}
+            </View>
+          )}
+
           {aiResult && user && <NativeAIResponseCard result={aiResult} userId={user.id} onChanged={() => refreshDashboard(true)} />}
 
           <View style={styles.pulseRow}>
@@ -312,9 +407,15 @@ const styles = StyleSheet.create({
   input: { flex: 1, color: colors.text, fontSize: 15, paddingHorizontal: 8 },
   micButton: { width: 42, height: 42, borderRadius: 21, backgroundColor: 'rgba(255,255,255,0.07)', borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
   micButtonRecording: { borderColor: 'rgba(70,227,183,0.5)', backgroundColor: 'rgba(70,227,183,0.08)' },
+  sendButton: { borderColor: 'rgba(66,232,224,0.46)', backgroundColor: 'rgba(66,232,224,0.09)' },
+  composerButtonDisabled: { opacity: 0.55 },
   quickActions: { flexDirection: 'row', gap: 8, marginTop: 12 },
   quickAction: { flex: 1, minHeight: 61, borderRadius: 18, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center', gap: 5 },
   quickActionText: { color: colors.textMuted, fontSize: 10.5, fontWeight: '500' },
+  attachmentsBlock: { marginTop: 14 },
+  attachmentsHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 2 },
+  attachmentsTitle: { color: colors.textMuted, fontSize: 11, fontWeight: '700', letterSpacing: 0.7, textTransform: 'uppercase' },
+  attachmentsCount: { color: colors.cyan, fontSize: 11, fontWeight: '700' },
   pulseRow: { flexDirection: 'row', gap: 8, marginTop: 18 },
   pulseStat: { flex: 1, minHeight: 66, borderRadius: 17, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
   pulseValue: { color: colors.text, fontSize: 20, fontWeight: '700' },

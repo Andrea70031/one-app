@@ -1,18 +1,22 @@
 import React from 'react';
-import { Image, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../theme/colors';
 
 export type CaptureKind = 'camera' | 'photo' | 'document' | 'audio';
 
 export type CaptureItem = {
+  id: string;
   kind: CaptureKind;
   uri?: string;
   name: string;
   detail?: string;
+  mimeType?: string;
+  base64?: string;
+  size?: number;
 };
 
-export function CapturePreview({ item }: { item: CaptureItem }) {
+export function CapturePreview({ item, onRemove }: { item: CaptureItem; onRemove?: () => void }) {
   const isImage = (item.kind === 'camera' || item.kind === 'photo') && item.uri;
 
   return (
@@ -32,16 +36,22 @@ export function CapturePreview({ item }: { item: CaptureItem }) {
         <Text numberOfLines={1} style={styles.title}>{item.name}</Text>
         <Text numberOfLines={2} style={styles.detail}>{item.detail ?? 'Pronto per essere elaborato da ONE'}</Text>
       </View>
-      <View style={styles.badge}>
-        <Text style={styles.badgeText}>ACQUISITO</Text>
-      </View>
+      {onRemove ? (
+        <Pressable onPress={onRemove} style={styles.removeButton} accessibilityLabel={`Rimuovi ${item.name}`}>
+          <Ionicons name="close" size={17} color={colors.textMuted} />
+        </Pressable>
+      ) : (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText}>PRONTO</Text>
+        </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    marginTop: 14,
+    marginTop: 10,
     padding: 12,
     borderRadius: 20,
     backgroundColor: 'rgba(255,255,255,0.055)',
@@ -88,5 +98,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0.6,
   },
+  removeButton: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.055)',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
 });
-
