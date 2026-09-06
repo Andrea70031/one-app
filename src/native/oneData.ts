@@ -120,6 +120,27 @@ export async function saveOneMemory(userId: string, input: { title: string; summ
   if (error) throw error;
 }
 
+export async function deleteOneMemory(userId: string, memoryId: string) {
+  const { data, error } = await supabase
+    .from('one_memories')
+    .delete()
+    .eq('id', memoryId)
+    .eq('user_id', userId)
+    .select('id');
+  if (error) throw error;
+  if (!data?.length) throw new Error('Nota non trovata o non eliminabile.');
+}
+
+export async function deleteOneSite(siteId: string) {
+  const { data, error } = await supabase
+    .from('sites')
+    .delete()
+    .eq('id', siteId)
+    .select('id');
+  if (error) throw error;
+  if (!data?.length) throw new Error('Non hai i permessi per eliminare questo cantiere.');
+}
+
 export async function mirrorReminder(userId: string, payload: Record<string, unknown>) {
   const title = String(payload.title ?? payload.text ?? 'Promemoria');
   const note = payload.note == null ? null : String(payload.note);
