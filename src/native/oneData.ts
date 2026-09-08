@@ -9,6 +9,7 @@ export type OneReminder = {
   due_at: string | null;
   completed: boolean;
   source: Record<string, unknown> | null;
+  deleted_at?: string | null;
 };
 
 export type OneMemory = {
@@ -17,6 +18,7 @@ export type OneMemory = {
   summary: string | null;
   kind: string;
   created_at: string;
+  deleted_at?: string | null;
 };
 
 export type OneSite = {
@@ -26,6 +28,7 @@ export type OneSite = {
   client: string | null;
   status: string;
   progress: number;
+  deleted_at?: string | null;
 };
 
 export type OneActivity = {
@@ -35,6 +38,7 @@ export type OneActivity = {
   type: string;
   icon: string | null;
   created_at: string;
+  deleted_at?: string | null;
 };
 
 export type NativeDashboard = {
@@ -44,12 +48,37 @@ export type NativeDashboard = {
   sites: OneSite[];
 };
 
+export type TrashKind = 'site' | 'memory' | 'reminder' | 'activity';
+
+export type TrashItem = {
+  kind: TrashKind;
+  id: string;
+  title: string;
+  subtitle: string;
+  deleted_at: string;
+};
+
+export type OneManageData = {
+  sites: OneSite[];
+  memories: OneMemory[];
+  reminders: OneReminder[];
+  activities: OneActivity[];
+  trash: TrashItem[];
+};
+
+export async function purgeExpiredTrash() {
+  const { error } = await supabase.rpc('purge_expired_trash');
+  if (error) throw error;
+}
+
 export async function loadNativeDashboard(userId: string): Promise<NativeDashboard> {
+  void purgeExpiredTrash().catch(() => undefined);
+
   const [activities, reminders, memories, sites] = await Promise.all([
-    supabase.from('one_activities').select('id,title,detail,type,icon,created_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(20),
-    supabase.from('one_reminders').select('id,title,note,due_at,completed,source').eq('user_id', userId).order('created_at', { ascending: false }).limit(120),
-    supabase.from('one_memories').select('id,title,summary,kind,created_at').eq('user_id', userId).order('created_at', { ascending: false }).limit(120),
-    supabase.from('sites').select('id,job_number,name,client,status,progress').order('updated_at', { ascending: false }).limit(100),
+    supabase.from('one_activities').select('id,title,detail,type,icon,created_at').eq('user_id', userId).is('deleted_at', null).order('created_at', { ascending: false }).limit(20),
+    supabase.from('one_reminders').select('id,title,note,due_at,completed,source').eq('user_id', userId).is('deleted_at', null).order('created_at', { ascending: false }).limit(120),
+    supabase.from('one_memories').select('id,title,summary,kind,created_at').eq('user_id', userId).is('deleted_at', null).order('created_at', { ascending: false }).limit(120),
+    supabase.from('sites').select('id,job_number,name,client,status,progress').is('deleted_at', null).order('updated_at', { ascending: false }).limit(100),
   ]);
 
   const firstError = activities.error || reminders.error || memories.error || sites.error;
@@ -64,6 +93,58 @@ export async function loadNativeDashboard(userId: string): Promise<NativeDashboa
 
   void syncOneNotifications(dashboard.reminders);
   return dashboard;
+}
+
+export async function loadOneManageData(userId: string): Promise<OneManageData> {
+  const [sites, memories, reminders, activities, trash] = await Promise.all([
+    supabase.from('sites').select('id,job_number,name,client,status,progress').is('deleted_at', null).order('updated_at', { ascending: false }).limit(120),
+    supabase.from('one_memories').select('id,title,summary,kind,created_at').eq('user_id', userId).is('deleted_at', null).order('created_at', { ascending: false }).limit(160),
+    supabase.from('one_reminders').select('id,title,note,due_at,completed,source').eq('user_id', userId).is('deleted_at', null).order('created_at', { ascending: false }).limit(160),
+    supabase.from('one_activities').select('id,title,detail,type,icon,created_at').eq('user_id', userId).is('deleted_at', null).order('created_at', { ascending: false }).limit(160),
+    loadTrashItems(userId),
+  ]);
+
+  const firstError = sites.error || memories.error || reminders.error || activities.error;
+  if (firstError) throw firstError;
+
+  return {
+    sites: (sites.data || []) as OneSite[],
+    memories: (memories.data || []) as OneMemory[],
+    reminders: (reminders.data || []) as OneReminder[],
+    activities: (activities.data || []) as OneActivity[],
+    trash,
+  };
+}
+
+export async function loadTrashItems(userId: string): Promise<TrashItem[]> {
+  const [sites, memories, reminders, activities] = await Promise.all([
+    supabase.from('sites').select('id,job_number,name,client,status,deleted_at').not('deleted_at', 'is', null).order('deleted_at', { ascending: false }).limit(120),
+    supabase.from('one_memories').select('id,title,summary,kind,deleted_at').eq('user_id', userId).not('deleted_at', 'is', null).order('deleted_at', { ascending: false }).limit(160),
+    supabase.from('one_reminders').select('id,title,note,due_at,deleted_at').eq('user_id', userId).not('deleted_at', 'is', null).order('deleted_at', { ascending: false }).limit(160),
+    supabase.from('one_activities').select('id,title,detail,type,deleted_at').eq('user_id', userId).not('deleted_at', 'is', null).order('deleted_at', { ascending: false }).limit(160),
+  ]);
+
+  const firstError = sites.error || memories.error || reminders.error || activities.error;
+  if (firstError) throw firstError;
+
+  const items: TrashItem[] = [];
+  for (const row of sites.data || []) {
+    if (!row.deleted_at) continue;
+    items.push({ kind: 'site', id: row.id, title: `${row.job_number} · ${row.name}`, subtitle: row.client || row.status || 'Cantiere', deleted_at: row.deleted_at });
+  }
+  for (const row of memories.data || []) {
+    if (!row.deleted_at) continue;
+    items.push({ kind: 'memory', id: row.id, title: row.title, subtitle: row.summary || row.kind || 'Nota Recall', deleted_at: row.deleted_at });
+  }
+  for (const row of reminders.data || []) {
+    if (!row.deleted_at) continue;
+    items.push({ kind: 'reminder', id: row.id, title: row.title, subtitle: row.note || (row.due_at ? `Scadenza ${new Date(row.due_at).toLocaleDateString('it-IT')}` : 'Promemoria'), deleted_at: row.deleted_at });
+  }
+  for (const row of activities.data || []) {
+    if (!row.deleted_at) continue;
+    items.push({ kind: 'activity', id: row.id, title: row.title, subtitle: row.detail || row.type || 'Attività ONE', deleted_at: row.deleted_at });
+  }
+  return items.sort((a, b) => new Date(b.deleted_at).getTime() - new Date(a.deleted_at).getTime());
 }
 
 function activityIcon(type: string): RecentItem['icon'] {
@@ -120,25 +201,62 @@ export async function saveOneMemory(userId: string, input: { title: string; summ
   if (error) throw error;
 }
 
-export async function deleteOneMemory(userId: string, memoryId: string) {
-  const { data, error } = await supabase
-    .from('one_memories')
-    .delete()
-    .eq('id', memoryId)
-    .eq('user_id', userId)
-    .select('id');
-  if (error) throw error;
-  if (!data?.length) throw new Error('Nota non trovata o non eliminabile.');
+async function assertUpdated(data: { id: string }[] | null, message: string) {
+  if (!data?.length) throw new Error(message);
 }
 
-export async function deleteOneSite(siteId: string) {
-  const { data, error } = await supabase
-    .from('sites')
-    .delete()
-    .eq('id', siteId)
-    .select('id');
+export async function softDeleteOneMemory(userId: string, memoryId: string) {
+  const { data, error } = await supabase.from('one_memories').update({ deleted_at: new Date().toISOString() }).eq('id', memoryId).eq('user_id', userId).select('id');
   if (error) throw error;
-  if (!data?.length) throw new Error('Non hai i permessi per eliminare questo cantiere.');
+  await assertUpdated(data, 'Nota non trovata o non eliminabile.');
+}
+
+export async function softDeleteOneReminder(userId: string, reminderId: string) {
+  const { data, error } = await supabase.from('one_reminders').update({ deleted_at: new Date().toISOString() }).eq('id', reminderId).eq('user_id', userId).select('id');
+  if (error) throw error;
+  await assertUpdated(data, 'Promemoria non trovato o non eliminabile.');
+}
+
+export async function softDeleteOneActivity(userId: string, activityId: string) {
+  const { data, error } = await supabase.from('one_activities').update({ deleted_at: new Date().toISOString() }).eq('id', activityId).eq('user_id', userId).select('id');
+  if (error) throw error;
+  await assertUpdated(data, 'Attività non trovata o non eliminabile.');
+}
+
+export async function softDeleteOneSite(siteId: string) {
+  const { data, error } = await supabase.from('sites').update({ deleted_at: new Date().toISOString() }).eq('id', siteId).select('id');
+  if (error) throw error;
+  await assertUpdated(data, 'Non hai i permessi per eliminare questo cantiere.');
+}
+
+export const deleteOneMemory = softDeleteOneMemory;
+export const deleteOneSite = softDeleteOneSite;
+
+export async function restoreTrashItem(userId: string, item: TrashItem) {
+  const update = { deleted_at: null };
+  if (item.kind === 'site') {
+    const { data, error } = await supabase.from('sites').update(update).eq('id', item.id).select('id');
+    if (error) throw error;
+    await assertUpdated(data, 'Non hai i permessi per ripristinare questo cantiere.');
+    return;
+  }
+  const table = item.kind === 'memory' ? 'one_memories' : item.kind === 'reminder' ? 'one_reminders' : 'one_activities';
+  const { data, error } = await supabase.from(table).update(update).eq('id', item.id).eq('user_id', userId).select('id');
+  if (error) throw error;
+  await assertUpdated(data, 'Elemento non trovato o non ripristinabile.');
+}
+
+export async function permanentlyDeleteTrashItem(userId: string, item: TrashItem) {
+  if (item.kind === 'site') {
+    const { data, error } = await supabase.from('sites').delete().eq('id', item.id).not('deleted_at', 'is', null).select('id');
+    if (error) throw error;
+    await assertUpdated(data, 'Non hai i permessi per eliminare definitivamente questo cantiere.');
+    return;
+  }
+  const table = item.kind === 'memory' ? 'one_memories' : item.kind === 'reminder' ? 'one_reminders' : 'one_activities';
+  const { data, error } = await supabase.from(table).delete().eq('id', item.id).eq('user_id', userId).not('deleted_at', 'is', null).select('id');
+  if (error) throw error;
+  await assertUpdated(data, 'Elemento non trovato o non eliminabile definitivamente.');
 }
 
 export async function mirrorReminder(userId: string, payload: Record<string, unknown>) {
@@ -162,7 +280,8 @@ export async function setReminderCompleted(userId: string, reminderId: string, c
     .from('one_reminders')
     .update({ completed })
     .eq('id', reminderId)
-    .eq('user_id', userId);
+    .eq('user_id', userId)
+    .is('deleted_at', null);
   if (error) throw error;
 }
 
