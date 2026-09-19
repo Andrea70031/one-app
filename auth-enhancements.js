@@ -16,7 +16,7 @@
       document.body.appendChild(notice);
     }
     notice.classList.toggle("error", kind === "error");
-    notice.innerHTML = `<span>${kind === "error" ? "!" : "✓"}</span><div><strong>${kind === "error" ? "Link non valido" : "Email confermata"}</strong><small>${message}</small></div>`;
+    notice.innerHTML = `<span>${kind === "error" ? "!" : "✓"}</span><div><strong>${kind === "error" ? "Link non valido" : "Email confermata"}</strong><small>${String(message).replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;", "'":"&#39;"}[ch]))}</small></div>`;
     notice.classList.add("visible");
     window.setTimeout(() => notice.classList.remove("visible"), 8000);
   };

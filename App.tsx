@@ -10,7 +10,7 @@ import { NativeHome } from './src/native/NativeHome';
 import { colors } from './src/theme/colors';
 
 function Root() {
-  const { loading, session } = useOneAuth();
+  const { loading, session, passwordRecovery } = useOneAuth();
   const [dataRevision, setDataRevision] = useState(0);
 
   if (loading) {
@@ -25,10 +25,10 @@ function Root() {
     );
   }
 
-  if (!session) return <NativeAuthScreen />;
+  if (!session || passwordRecovery) return <NativeAuthScreen />;
   return (
-    <View style={{ flex: 1 }}>
-      <NativeHome key={dataRevision} />
+    <View key={session.user.id} style={{ flex: 1 }}>
+      <NativeHome dataRevision={dataRevision} />
       <NativeDeletionManager onChanged={() => setDataRevision((value) => value + 1)} />
     </View>
   );

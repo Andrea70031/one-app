@@ -14,7 +14,8 @@
       "buildNumber": "1",
       "infoPlist": {
         "LSApplicationQueriesSchemes": [
-          "shortcuts"
+          "shortcuts",
+          "mailto"
         ],
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -43,7 +44,8 @@
         "expo-audio",
         {
           "microphonePermission": "ONE usa il microfono solo quando scegli di parlare con l'assistente.",
-          "enableBackgroundRecording": false
+          "enableBackgroundRecording": false,
+          "enableBackgroundPlayback": false
         }
       ],
       [

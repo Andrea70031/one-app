@@ -1,6 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Alert,
+  AppState,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   RefreshControl,
   SafeAreaView,
@@ -12,7 +15,7 @@ import {
   View,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
@@ -40,7 +43,6 @@ import {
   NativeSpacesScreen,
 } from './NativeSections';
 
-const stateSequence: OrbState[] = ['idle', 'activating', 'listening', 'thinking', 'done'];
 const emptyDashboard: NativeDashboard = { activities: [], reminders: [], memories: [], sites: [] };
 const MAX_IMAGES = 6;
 
@@ -48,7 +50,7 @@ function captureId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export function NativeHome() {
+export function NativeHome({ dataRevision = 0 }: { dataRevision?: number }) {
   const { user, profile, signOut } = useOneAuth();
   const [section, setSection] = useState<NativeSection>('home');
   const [orbState, setOrbState] = useState<OrbState>('idle');
@@ -59,9 +61,11 @@ export function NativeHome() {
   const [refreshing, setRefreshing] = useState(false);
   const [aiResult, setAiResult] = useState<OneAIResult | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const requestBusy = useRef(false);
+  const recordingBusy = useRef(false);
+  const [syncError, setSyncError] = useState(false);
 
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
-  const index = useMemo(() => stateSequence.indexOf(orbState), [orbState]);
   const recentItems = useMemo(() => dashboardRecentItems(dashboard), [dashboard]);
   const openReminders = useMemo(() => dashboard.reminders.filter((item) => !item.completed).length, [dashboard.reminders]);
   const imageCount = useMemo(() => captures.filter((item) => item.kind === 'camera' || item.kind === 'photo').length, [captures]);
@@ -79,7 +83,9 @@ export function NativeHome() {
     if (!silent) setRefreshing(true);
     try {
       setDashboard(await loadNativeDashboard(user.id));
+      setSyncError(false);
     } catch (error) {
+      setSyncError(true);
       if (!silent) Alert.alert('Sincronizzazione ONE', error instanceof Error ? error.message : 'Non riesco a caricare i dati.');
     } finally {
       if (!silent) setRefreshing(false);
@@ -88,23 +94,14 @@ export function NativeHome() {
 
   useEffect(() => {
     refreshDashboard(true);
-  }, [user?.id]);
+  }, [user?.id, dataRevision]);
 
   useEffect(() => {
-    if (orbState === 'activating') {
-      const timer = setTimeout(() => setOrbState('listening'), 650);
-      return () => clearTimeout(timer);
-    }
     if (orbState === 'done') {
       const timer = setTimeout(() => setOrbState('idle'), 1800);
       return () => clearTimeout(timer);
     }
   }, [orbState]);
-
-  const advanceOrb = () => {
-    const next = stateSequence[(index + 1) % stateSequence.length];
-    if (next) setOrbState(next);
-  };
 
   const addCaptures = (items: CaptureItem[]) => {
     setCaptures((current) => {
@@ -120,7 +117,7 @@ export function NativeHome() {
       }
       return next;
     });
-    setOrbState('done');
+    setOrbState('idle');
   };
 
   const removeCapture = (id: string) => {
@@ -128,6 +125,7 @@ export function NativeHome() {
   };
 
   const takePhoto = async () => {
+    if (requestBusy.current || isRecording) return;
     if (imageCount >= MAX_IMAGES) return Alert.alert('Limite immagini', `ONE può analizzare fino a ${MAX_IMAGES} immagini nella stessa richiesta.`);
     const permission = await ImagePicker.requestCameraPermissionsAsync();
     if (!permission.granted) return Alert.alert('Fotocamera non disponibile', 'Consenti a ONE di usare la fotocamera nelle impostazioni.');
@@ -148,10 +146,9 @@ export function NativeHome() {
   };
 
   const pickPhoto = async () => {
+    if (requestBusy.current || isRecording) return;
     const remaining = MAX_IMAGES - imageCount;
     if (remaining <= 0) return Alert.alert('Limite immagini', `Rimuovi una foto prima di aggiungerne altre. Il limite è ${MAX_IMAGES}.`);
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) return Alert.alert('Foto non disponibili', 'Consenti a ONE di accedere alle foto nelle impostazioni.');
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       quality: 0.78,
@@ -175,7 +172,8 @@ export function NativeHome() {
   };
 
   const pickDocument = async () => {
-    const result = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true, multiple: false });
+    if (requestBusy.current || isRecording) return;
+    const result = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true, multiple: false, type: ['application/pdf', 'text/plain', 'text/csv', 'text/markdown'] });
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0];
       addCaptures([{
@@ -191,6 +189,8 @@ export function NativeHome() {
   };
 
   const toggleRecording = async () => {
+    if (requestBusy.current || recordingBusy.current) return;
+    recordingBusy.current = true;
     try {
       if (!isRecording) {
         const permission = await requestRecordingPermissionsAsync();
@@ -202,6 +202,7 @@ export function NativeHome() {
         setOrbState('listening');
       } else {
         await recorder.stop();
+        await setAudioModeAsync({ allowsRecording: false });
         setIsRecording(false);
         if (!recorder.uri) throw new Error('Audio non disponibile');
         addCaptures([{
@@ -216,32 +217,47 @@ export function NativeHome() {
     } catch {
       setIsRecording(false);
       setOrbState('idle');
+      await setAudioModeAsync({ allowsRecording: false }).catch(() => undefined);
       Alert.alert('Registrazione non riuscita', 'Riprova tra qualche secondo.');
-    }
+    } finally { recordingBusy.current = false; }
   };
+
+  useEffect(() => {
+    if (!isRecording) return;
+    const timer = setTimeout(() => { void toggleRecording(); }, 60000);
+    const listener = AppState.addEventListener('change', state => {
+      if (state !== 'active') void toggleRecording();
+    });
+    return () => { clearTimeout(timer); listener.remove(); };
+  }, [isRecording]);
+
+  const safeCapture = (action: () => Promise<unknown>) => { void action().catch(() => Alert.alert('Allegato non disponibile', 'Non riesco ad aprire questa funzione. Controlla i permessi e riprova.')); };
 
   const submitRequest = async () => {
     const text = input.trim();
-    if ((!text && !captures.length) || submitting || !user) {
-      if (!text && !captures.length) setOrbState('activating');
+    if ((!text && !captures.length) || requestBusy.current || isRecording || !user) {
+      if (!text && !captures.length) return;
       return;
     }
 
+    requestBusy.current = true;
     setSubmitting(true);
     setOrbState('thinking');
     setAiResult(null);
     try {
       const result = await askOneNative({ text, attachments: captures });
+      if (!result) { setOrbState('idle'); return; }
       setAiResult(result);
       setInput('');
       setCaptures([]);
       setOrbState('done');
-      await addOneActivity(user.id, result.memory_title || 'Richiesta a ONE', result.memory_summary || result.summary.slice(0, 240), 'ai');
+      await addOneActivity(user.id, result.memory_title || 'Richiesta a ONE', result.memory_summary || result.summary.slice(0, 240), 'ai').catch(() => setSyncError(true));
       await refreshDashboard(true);
     } catch (error) {
       setOrbState('idle');
       Alert.alert('ONE non ha completato la richiesta', error instanceof Error ? error.message : 'Riprova tra poco.');
     } finally {
+      requestBusy.current = false;
       setSubmitting(false);
     }
   };
@@ -255,7 +271,7 @@ export function NativeHome() {
 
   const openOne = () => {
     setSection('home');
-    setOrbState('activating');
+    if (!requestBusy.current) void toggleRecording();
   };
 
   const composerAction = isRecording ? toggleRecording : hasDraft ? submitRequest : toggleRecording;
@@ -272,6 +288,7 @@ export function NativeHome() {
       <StatusBar style="light" />
       <LinearGradient colors={['#07101B', colors.background, '#040509']} locations={[0, 0.34, 1]} style={StyleSheet.absoluteFill} />
       <SafeAreaView style={styles.safe}>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.header}>
           <Pressable
             style={styles.headerButton}
@@ -287,8 +304,10 @@ export function NativeHome() {
           </Pressable>
         </View>
 
+        {syncError && <Pressable onPress={() => refreshDashboard(false)} accessibilityRole="button"><Text style={{ color: '#FF9AA7', paddingHorizontal: 24, paddingVertical: 10 }}>Dati non aggiornati. Tocca per riprovare.</Text></Pressable>}
         {section === 'home' ? (
           <ScrollView
+            keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.content}
             refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => refreshDashboard(false)} tintColor={colors.cyan} />}
@@ -298,7 +317,7 @@ export function NativeHome() {
               <Text style={styles.tagline}>Mostrami, chiedi, delega.{`\n`}Io mi occupo del resto.</Text>
             </View>
 
-            <OneOrb state={orbState} onPress={advanceOrb} />
+            <OneOrb state={orbState} onPress={() => { if (!submitting) void composerAction(); }} />
 
             <View style={styles.askBar}>
               <View style={styles.spark}><Ionicons name="sparkles-outline" size={18} color={colors.cyan} /></View>
@@ -314,6 +333,7 @@ export function NativeHome() {
               />
               <Pressable
                 onPress={composerAction}
+                accessibilityLabel={isRecording ? 'Ferma registrazione' : hasDraft ? 'Invia richiesta' : 'Registra voce'}
                 disabled={submitting}
                 style={[
                   styles.micButton,
@@ -331,9 +351,9 @@ export function NativeHome() {
             </View>
 
             <View style={styles.quickActions}>
-              <QuickAction icon="camera-outline" label="Mostra" onPress={takePhoto} />
-              <QuickAction icon="document-outline" label="Documento" onPress={pickDocument} />
-              <QuickAction icon="image-outline" label="Foto" onPress={pickPhoto} />
+              <QuickAction icon="camera-outline" label="Mostra" onPress={() => safeCapture(takePhoto)} />
+              <QuickAction icon="document-outline" label="Documento" onPress={() => safeCapture(pickDocument)} />
+              <QuickAction icon="image-outline" label="Foto" onPress={() => safeCapture(pickPhoto)} />
               <QuickAction icon={isRecording ? 'stop-circle-outline' : 'mic-outline'} label={isRecording ? 'Stop' : 'Parla'} onPress={toggleRecording} />
             </View>
 
@@ -344,7 +364,7 @@ export function NativeHome() {
                   <Text style={styles.attachmentsCount}>{captures.length}</Text>
                 </View>
                 {captures.map((item) => (
-                  <CapturePreview key={item.id} item={item} onRemove={() => removeCapture(item.id)} />
+                  <CapturePreview key={item.id} item={item} onRemove={() => { if (!submitting) removeCapture(item.id); }} />
                 ))}
               </View>
             )}
@@ -359,7 +379,7 @@ export function NativeHome() {
 
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Attività recenti</Text>
-              <Text style={styles.sectionLink}>LIVE</Text>
+              <Text style={styles.sectionLink}>RECENTI</Text>
             </View>
 
             <View style={styles.card}>
@@ -414,6 +434,7 @@ export function NativeHome() {
           <NavItem icon="search-outline" label="Recall" active={section === 'recall' || section === 'reminders'} onPress={() => setSection('recall')} />
           <NavItem icon="person-outline" label="Account" active={section === 'account'} onPress={() => setSection('account')} />
         </View>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     </View>
   );

@@ -1,3 +1,4 @@
+import { drainStorageCleanup } from '../_shared/storageCleanup.ts';
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { withSupabase } from "npm:@supabase/server";
@@ -29,54 +30,23 @@ export default {
     if (!url || !serviceKey) return response({ error: "Servizio account non configurato" }, 503);
 
     const admin = createClient(url, serviceKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
+      global: { fetch: (url, init) => fetch(url, { ...init, signal: AbortSignal.timeout(15000) }) },
+    auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // Remove files only from workspaces that will disappear completely. Shared
-    // workspace files remain because ownership is transferred to another member.
-    const { data: ownedSites, error: ownedError } = await admin
-      .from("sites")
-      .select("id")
-      .eq("created_by", userId);
-    if (ownedError) return response({ error: "Preparazione eliminazione non riuscita" }, 500);
-
-    const ownedIds = (ownedSites || []).map((site: { id: string }) => site.id);
-    if (ownedIds.length) {
-      const { data: otherMembers, error: memberError } = await admin
-        .from("site_members")
-        .select("site_id,user_id")
-        .in("site_id", ownedIds)
-        .neq("user_id", userId);
-      if (memberError) return response({ error: "Preparazione eliminazione non riuscita" }, 500);
-
-      const shared = new Set((otherMembers || []).map((member: { site_id: string }) => member.site_id));
-      const soleOwned = ownedIds.filter((id: string) => !shared.has(id));
-
-      if (soleOwned.length) {
-        const [documents, photos] = await Promise.all([
-          admin.from("documents").select("storage_path").in("site_id", soleOwned),
-          admin.from("photos").select("storage_path").in("site_id", soleOwned),
-        ]);
-        if (documents.error || photos.error) return response({ error: "Pulizia file non riuscita" }, 500);
-
-        const paths = Array.from(new Set([
-          ...(documents.data || []).map((item: { storage_path: string }) => item.storage_path),
-          ...(photos.data || []).map((item: { storage_path: string }) => item.storage_path),
-        ].filter(Boolean)));
-
-        if (paths.length) {
-          const { error: storageError } = await admin.storage.from("site-files").remove(paths);
-          if (storageError) return response({ error: "Pulizia file non riuscita" }, 500);
-        }
-      }
-    }
-
-    const { error: prepError } = await admin.rpc("prepare_one_account_deletion", {
+    const { error: prepError } = await admin.rpc("prepare_one_storage_account_deletion", {
       p_target_user: userId,
     });
     if (prepError) {
       console.error(JSON.stringify({ event: "one_delete_account_prepare_failed", code: prepError.code || "unknown" }));
       return response({ error: "Non riesco a preparare l'eliminazione dell'account" }, 500);
+    }
+
+    try {
+      const cleanup = await drainStorageCleanup(admin, 20);
+      if (cleanup.pending) return response({ error: "Pulizia allegati in corso. Riprova tra pochi minuti." }, 503);
+    } catch {
+      return response({ error: "Pulizia allegati temporaneamente non disponibile. Riprova tra pochi minuti." }, 503);
     }
 
     const { error: deleteError } = await admin.auth.admin.deleteUser(userId);

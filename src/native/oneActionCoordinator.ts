@@ -14,8 +14,8 @@ export async function executeCoordinatedAction(userId: string, action: OneAIActi
   if (isWorkspaceAction(action)) {
     await logOneAction(userId, { kind, label: action.label, payload: action.payload }, 'created');
     const result = await executeWorkspaceAction(userId, action);
-    await logOneAction(userId, { kind, label: action.label, payload: action.payload }, result.ok ? 'executed' : result.status || 'failed');
-    if (result.ok) await addOneActivity(userId, action.label || 'Azione ONE', result.message || null, `action_${kind}`);
+    await logOneAction(userId, { kind, label: action.label, payload: action.payload }, result.ok ? 'executed' : result.status || 'failed').catch(() => undefined);
+    if (result.ok) await addOneActivity(userId, action.label || 'Azione ONE', result.message || null, `action_${kind}`).catch(() => undefined);
     return result;
   }
 
@@ -29,9 +29,12 @@ export async function executeCoordinatedAction(userId: string, action: OneAIActi
   const result = await executeNativeAction(native);
 
   if (result.ok) {
-    if (native.kind === 'reminder') await mirrorReminder(userId, native.payload ?? {});
-    await logOneAction(userId, native, 'executed');
-    await addOneActivity(userId, native.label || 'Azione ONE', result.message || null, `action_${native.kind}`);
+    if (native.kind === 'reminder') {
+      try { await mirrorReminder(userId, native.payload ?? {}); }
+      catch { result.message = 'Promemoria creato sul dispositivo. La copia in ONE non è sincronizzata; non ripetere la creazione.'; }
+    }
+    await logOneAction(userId, native, result.status === 'presented' ? 'presented' : 'executed').catch(() => undefined);
+    await addOneActivity(userId, native.label || 'Azione ONE', result.message || null, `action_${native.kind}`).catch(() => undefined);
   } else {
     await logOneAction(userId, native, result.status || 'failed');
   }

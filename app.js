@@ -115,12 +115,14 @@ function showAIResult(result,source={type:"ai",name:""}){
   target.appendChild(wrap);target.classList.remove("hidden");
   addActivity(result?.memory_title||"Risposta ONE",result?.memory_summary||result?.intent||"Elaborata da ONE","✦","ai",{extracted:result?.extracted||{},answer:result?.summary||""})
 }
+function confirmAITransfer(){return confirm("Inviare a OpenAI?\n\nONE invierà la richiesta, gli allegati e il contesto degli Spazi accessibili (commesse, attività e criticità) a OpenAI per rispondere. Supabase gestisce il trasferimento e la cronologia. Puoi annullare. Dettagli nella Privacy di ONE.")}
 async function askONE(payload,source={type:"ai",name:""}){
   if(!session){show("Accedi a ONE per usare l'AI e proteggere il tuo spazio.",true);openAuth();return}
+  if(!confirmAITransfer())return;
   setState("thinking");show("ONE sta analizzando…");
   try{
     const activeSession=await ensureSession();
-    const r=await fetch(ONE_AI_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json","apikey":SUPABASE_ANON_KEY,"Authorization":`Bearer ${activeSession.access_token}`},body:JSON.stringify({...payload,supported_actions:["create_site"]})});
+    const r=await fetch(ONE_AI_ENDPOINT,{method:"POST",signal:AbortSignal.timeout(70000),headers:{"Content-Type":"application/json","apikey":SUPABASE_ANON_KEY,"Authorization":`Bearer ${activeSession.access_token}`},body:JSON.stringify({...payload,supported_actions:["create_site"]})});
     const data=await r.json().catch(()=>({}));if(!r.ok)throw Object.assign(new Error(data?.detail||data?.error||`Errore ${r.status}`),{code:data?.error,status:r.status});
     setAIStatus(true,"ONE AI attiva");setState("done");showAIResult(data.result||data,source);clearTimeout(timer);timer=setTimeout(()=>setState("idle"),1600)
   }catch(err){
@@ -154,11 +156,12 @@ $("clearCapture").onclick=()=>{$("captureCard").classList.add("hidden");$("captu
 
 function blobToDataURL(blob){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(blob)})}
 async function transcribeAudio(blob){
+  if(!confirmAITransfer())throw new Error("Invio audio annullato");
   if(!session){setState("idle");show("Accedi a ONE per trascrivere e proteggere la nota vocale.",true);openAuth();return}
   setState("thinking");show("Sto trascrivendo la tua voce…");
   try{
     const activeSession=await ensureSession();
-    const r=await fetch(ONE_TRANSCRIBE_ENDPOINT,{method:"POST",headers:{"Content-Type":"application/json","apikey":SUPABASE_ANON_KEY,"Authorization":`Bearer ${activeSession.access_token}`},body:JSON.stringify({audio:await blobToDataURL(blob)})});
+    const r=await fetch(ONE_TRANSCRIBE_ENDPOINT,{method:"POST",signal:AbortSignal.timeout(70000),headers:{"Content-Type":"application/json","apikey":SUPABASE_ANON_KEY,"Authorization":`Bearer ${activeSession.access_token}`},body:JSON.stringify({audio:await blobToDataURL(blob)})});
     const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d?.detail||d?.error||"Trascrizione non riuscita");
     if(!d.text)throw new Error("Nessun testo riconosciuto");
     addActivity("Nota vocale",d.text,"◉","audio");show(`Hai detto: “${d.text}”`);await askONE({text:d.text,...(selectedSiteId?{site_id:selectedSiteId}:{})},{type:"audio",name:"nota vocale"})

@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useRef } from 'react';
-import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { AccessibilityInfo, Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { colors } from '../theme/colors';
 
@@ -30,6 +30,12 @@ export function EnergyOrb({
   onPress,
   accessibilityLabel = 'Attiva ONE',
 }: Props) {
+  const [reduceMotion, setReduceMotion] = useState(false);
+  useEffect(() => {
+    AccessibilityInfo.isReduceMotionEnabled().then(setReduceMotion).catch(() => undefined);
+    const listener = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
+    return () => listener.remove();
+  }, []);
   const rotatePrimary = useRef(new Animated.Value(0)).current;
   const rotateSecondary = useRef(new Animated.Value(0)).current;
   const rotateOrbit = useRef(new Animated.Value(0)).current;
@@ -47,6 +53,7 @@ export function EnergyOrb({
     shimmer.setValue(0);
     done.setValue(0);
 
+    if (reduceMotion) return;
     const motion = speeds[state];
     const primaryLoop = Animated.loop(
       Animated.timing(rotatePrimary, {
@@ -146,7 +153,7 @@ export function EnergyOrb({
       rippleLoop.stop();
       shimmerLoop.stop();
     };
-  }, [done, pulse, ripple, rotateOrbit, rotatePrimary, rotateSecondary, shimmer, state]);
+  }, [done, pulse, ripple, rotateOrbit, rotatePrimary, rotateSecondary, shimmer, state, reduceMotion]);
 
   const primaryRotation = rotatePrimary.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
   const secondaryRotation = rotateSecondary.interpolate({ inputRange: [0, 1], outputRange: ['360deg', '0deg'] });
