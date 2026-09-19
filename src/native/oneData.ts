@@ -17,6 +17,7 @@ export type OneMemory = {
   title: string;
   summary: string | null;
   kind: string;
+  payload?: { summary?: string; answer?: string } | null;
   created_at: string;
   deleted_at?: string | null;
 };
@@ -77,7 +78,7 @@ export async function loadNativeDashboard(userId: string): Promise<NativeDashboa
   const [activities, reminders, memories, sites] = await Promise.all([
     supabase.from('one_activities').select('id,title,detail,type,icon,created_at').eq('user_id', userId).is('deleted_at', null).order('created_at', { ascending: false }).limit(20),
     supabase.from('one_reminders').select('id,title,note,due_at,completed,source').eq('user_id', userId).is('deleted_at', null).order('created_at', { ascending: false }).limit(120),
-    supabase.from('one_memories').select('id,title,summary,kind,created_at').eq('user_id', userId).is('deleted_at', null).order('created_at', { ascending: false }).limit(120),
+    supabase.from('one_memories').select('id,title,summary,kind,payload,created_at').eq('user_id', userId).is('deleted_at', null).order('created_at', { ascending: false }).limit(120),
     supabase.from('sites').select('id,job_number,name,client,status,progress').is('deleted_at', null).order('updated_at', { ascending: false }).limit(100),
   ]);
 
@@ -91,14 +92,14 @@ export async function loadNativeDashboard(userId: string): Promise<NativeDashboa
     sites: (sites.data || []) as OneSite[],
   };
 
-  void syncOneNotifications(dashboard.reminders);
+  void syncOneNotifications(dashboard.reminders, userId);
   return dashboard;
 }
 
 export async function loadOneManageData(userId: string): Promise<OneManageData> {
   const [sites, memories, reminders, activities, trash] = await Promise.all([
     supabase.from('sites').select('id,job_number,name,client,status,progress').is('deleted_at', null).order('updated_at', { ascending: false }).limit(120),
-    supabase.from('one_memories').select('id,title,summary,kind,created_at').eq('user_id', userId).is('deleted_at', null).order('created_at', { ascending: false }).limit(160),
+    supabase.from('one_memories').select('id,title,summary,kind,payload,created_at').eq('user_id', userId).is('deleted_at', null).order('created_at', { ascending: false }).limit(160),
     supabase.from('one_reminders').select('id,title,note,due_at,completed,source').eq('user_id', userId).is('deleted_at', null).order('created_at', { ascending: false }).limit(160),
     supabase.from('one_activities').select('id,title,detail,type,icon,created_at').eq('user_id', userId).is('deleted_at', null).order('created_at', { ascending: false }).limit(160),
     loadTrashItems(userId),

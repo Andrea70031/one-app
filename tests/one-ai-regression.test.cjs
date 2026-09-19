@@ -25,8 +25,8 @@ async function callEdge({ status = 200, payload, key = 'test-only', user = 'test
     }
   });
   vm.runInContext(edgeSource, context);
-  const supabase = {from(table) {
-    const q = {select() {return q}, eq() {return q}, order() {return q}, limit() {return q}, single() {return q},
+  const supabase = {rpc: async () => ({data: true, error: null}), from(table) {
+    const q = {select() {return q}, eq() {return q}, order() {return q}, is() {return q}, limit() {return q}, single() {return q},
       insert(data) {writes.push({table, data}); return Promise.resolve({error: null})},
       then(resolve) {return Promise.resolve({data: [], error: null}).then(resolve)}};
     return q;
@@ -158,4 +158,16 @@ test('opening the create_site review never saves until the user submits', async 
   assert.equal(saves, 0); assert.equal(typeof $('operationForm').onsubmit, 'function');
   await $('operationForm').onsubmit({preventDefault() {}, currentTarget: {querySelector: () => ({disabled: false})}});
   assert.equal(saves, 1);
+});
+
+test('native capabilities constrain proposed actions and provider response storage is disabled', async () => {
+  const r = await callEdge({body:{supported_actions:['create_site'], executable_actions:['email','create_site']}});
+  const body=r.requests[0].body;
+  assert.deepEqual(Array.from(body.text.format.schema.properties.actions.items.properties.kind.enum),['email','create_site']);
+  assert.equal(body.store,false);
+});
+
+test('overlong requests are rejected before provider invocation', async()=>{
+  const r=await callEdge({body:{text:'x'.repeat(120001)}});
+  assert.equal(r.status,413);assert.equal(r.requests.length,0);
 });

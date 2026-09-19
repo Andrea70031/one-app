@@ -16,7 +16,16 @@ export type OneNotificationPreferences = {
   briefingHour: number;
 };
 
-const PREFS_KEY = 'one.notification.preferences.v1';
+let activeUserId: string | null = null;
+let generation = 0;
+let queue: Promise<void> = Promise.resolve();
+const prefsKey = () => `one.notification.preferences.v2.${activeUserId || 'signed-out'}`;
+export function setNotificationUser(userId: string | null) {
+  if (activeUserId === userId) return;
+  activeUserId = userId;
+  generation++;
+  queue = queue.catch(() => undefined).then(cancelManagedNotifications).catch(() => undefined);
+}
 const MANAGED_KEY = 'oneManaged';
 const DEFAULT_PREFS: OneNotificationPreferences = {
   enabled: false,
@@ -45,7 +54,7 @@ async function ensureAndroidChannel() {
 
 export async function loadNotificationPreferences(): Promise<OneNotificationPreferences> {
   try {
-    const raw = await SecureStore.getItemAsync(PREFS_KEY);
+    const raw = await SecureStore.getItemAsync(prefsKey());
     if (!raw) return DEFAULT_PREFS;
     const parsed = JSON.parse(raw) as Partial<OneNotificationPreferences>;
     return {
@@ -61,7 +70,7 @@ export async function loadNotificationPreferences(): Promise<OneNotificationPref
 }
 
 export async function saveNotificationPreferences(next: OneNotificationPreferences) {
-  await SecureStore.setItemAsync(PREFS_KEY, JSON.stringify(next));
+  await SecureStore.setItemAsync(prefsKey(), JSON.stringify(next));
 }
 
 export async function requestOneNotificationPermission() {
@@ -81,11 +90,19 @@ async function cancelManagedNotifications() {
   );
 }
 
-export async function syncOneNotifications(reminders: ReminderLike[]) {
+export function syncOneNotifications(reminders: ReminderLike[], userId = activeUserId) {
+  const expected = generation;
+  queue = queue.catch(() => undefined).then(async () => {
+    if (!userId || userId !== activeUserId || expected !== generation) return;
+    await syncNotifications(reminders, expected);
+  });
+  return queue;
+}
+async function syncNotifications(reminders: ReminderLike[], expected: number) {
   try {
     const prefs = await loadNotificationPreferences();
     await cancelManagedNotifications();
-    if (!prefs.enabled) return;
+    if (!prefs.enabled || expected !== generation) return;
 
     const permission = await Notifications.getPermissionsAsync();
     if (!permission.granted) return;
@@ -100,6 +117,7 @@ export async function syncOneNotifications(reminders: ReminderLike[]) {
       .slice(0, 50);
 
     for (const { item, date } of upcoming) {
+      if (expected !== generation) return;
       await Notifications.scheduleNotificationAsync({
         content: {
           title: item.title,
@@ -114,14 +132,11 @@ export async function syncOneNotifications(reminders: ReminderLike[]) {
       });
     }
 
-    if (prefs.briefing) {
-      const openCount = reminders.filter((item) => !item.completed).length;
+    if (prefs.briefing && expected === generation) {
       await Notifications.scheduleNotificationAsync({
         content: {
           title: 'Buongiorno da ONE',
-          body: openCount
-            ? `${openCount} promemoria aperti. Apri ONE per il briefing.`
-            : 'Apri ONE per il briefing della giornata.',
+          body: 'Apri ONE per controllare i promemoria della giornata.',
           data: { [MANAGED_KEY]: true, kind: 'briefing' },
         },
         trigger: {

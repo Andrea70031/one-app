@@ -7,8 +7,8 @@
 - iOS bundle identifier: `com.one.assistant`
 - Category: **Productivity**
 - Secondary category: **Business**
-- Age rating target: **4+**
-- Pricing for 1.0: **Free** (no in-app purchases in this release)
+- Age rating: **complete the current Apple questionnaire; do not assume 4+ for a general-purpose AI assistant.**
+- Implemented pricing: **no in-app purchases**. Suggested first submission: free. Paid features/subscriptions require a separate StoreKit implementation and product review before they can be advertised.
 
 ## Store text
 
@@ -21,7 +21,7 @@ ONE trasforma richieste, foto, documenti e voce in risposte, promemoria e azioni
 ### Description
 ONE è un assistente personale e professionale progettato per passare dalla richiesta all'azione.
 
-Puoi scrivere, parlare, scattare una foto o allegare un documento. ONE analizza il contenuto, mantiene il contesto nel tuo Recall e ti aiuta a creare promemoria, preparare eventi, gestire attività e lavorare nei tuoi Spazi.
+Puoi scrivere, parlare, scattare una foto o allegare un documento. ONE analizza il contenuto, mantiene il contesto nel tuo Recall e ti aiuta a creare promemoria, preparare eventi, preparare operazioni e consultare il riepilogo dei tuoi Spazi.
 
 Funzioni principali:
 - assistente AI testuale e multimodale;
@@ -29,7 +29,7 @@ Funzioni principali:
 - trascrizione delle richieste vocali;
 - Recall, la memoria privata sincronizzata;
 - promemoria con notifiche locali e briefing giornaliero opzionale;
-- Spazi per cantieri, commesse e progetti;
+- riepilogo degli Spazi per cantieri, commesse e progetti;
 - attività e operazioni con revisione e conferma;
 - integrazione con Calendario, Mappe, email e Comandi Rapidi quando richiesto.
 
@@ -75,6 +75,8 @@ Permissions are requested contextually:
 - Calendar: only when preparing or adding an event.
 - Notifications: only after the user enables notifications in Account.
 
+Before each native AI request, ONE asks for explicit consent to share the request, selected attachments and accessible workspace context with OpenAI via Supabase. Declining leaves the draft intact and sends nothing. Privacy and Terms links are also available before sign-in.
+
 The AI backend requires authentication and applies per-user abuse limits. Operational workspace writes remain subject to Supabase RLS and explicit confirmation flows.
 
 ## Publication-only inputs still required
@@ -84,6 +86,9 @@ These belong to the Apple/Expo accounts and are intentionally not stored in the 
 - EAS project initialization (`eas init`) if the project has not yet been linked to an Expo account;
 - App Store Connect app record creation and final legal seller/developer identity;
 - final screenshots uploaded to App Store Connect;
-- final App Privacy questionnaire confirmation by the account holder.
+- final App Privacy questionnaire confirmation by the account holder;
+- real private support contact and confirmed controller identity in Privacy;
+- a working reviewer account that exercises AI, plus the exact tested build;
+- `one://auth/callback` added to Supabase Auth redirect allowlist, and real confirmation/recovery email tests. Do not submit without these checks.
 
-Once those publication credentials are available, no product-development block should remain for the 1.0 submission.
+This package is a draft. See `APP_STORE_AUDIT_20260919.md` for remaining product, backend and signing gates; credentials alone do not establish release readiness.

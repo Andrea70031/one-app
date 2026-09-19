@@ -24,14 +24,14 @@ export async function executeNativeAction(action: OneNativeAction): Promise<OneN
         return await createNativeReminder({
           title: String(payload.title ?? payload.text ?? action.label ?? ''),
           note: String(payload.note ?? payload.notes ?? ''),
-          dueAt: (payload.dueAt ?? payload.due_at ?? payload.date ?? null) as ReminderPayload['dueAt'],
+          dueAt: (payload.due_at ?? payload.dueAt ?? payload.date ?? null) as ReminderPayload['dueAt'],
         });
 
       case 'calendar':
         return await presentCalendarEvent({
           title: String(payload.title ?? action.label ?? ''),
-          start: (payload.start ?? payload.start_at ?? payload.date ?? new Date()) as CalendarPayload['start'],
-          end: (payload.end ?? payload.end_at ?? new Date(Date.now() + 60 * 60 * 1000)) as CalendarPayload['end'],
+          start: (payload.start ?? payload.start_at ?? payload.date ?? '') as CalendarPayload['start'],
+          end: (payload.end ?? payload.end_at ?? '') as CalendarPayload['end'],
           location: String(payload.location ?? payload.address ?? ''),
           notes: String(payload.notes ?? payload.note ?? payload.description ?? ''),
         });

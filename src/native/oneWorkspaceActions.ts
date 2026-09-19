@@ -15,10 +15,14 @@ export function isWorkspaceAction(action: OneAIAction) {
 
 async function resolveSiteId(payload: Record<string, unknown>) {
   const direct = String(payload.site_id ?? '').trim();
-  if (direct) return direct;
+  if (direct) {
+    const { data, error } = await supabase.from('sites').select('id').eq('id', direct).is('deleted_at', null).maybeSingle();
+    if (error) throw error;
+    return data?.id ?? null;
+  }
   const job = String(payload.site_job_number ?? '').trim();
   if (!job) return null;
-  const { data, error } = await supabase.from('sites').select('id').eq('job_number', job).maybeSingle();
+  const { data, error } = await supabase.from('sites').select('id').eq('job_number', job).is('deleted_at', null).maybeSingle();
   if (error) throw error;
   return data?.id ?? null;
 }
@@ -100,12 +104,14 @@ export async function executeWorkspaceAction(userId: string, action: OneAIAction
   }
 
   if (kind === 'update_site_progress') {
+    if (payload.progress == null || String(payload.progress).trim() === '') return { ok: false, status: 'needs_input', message: 'Inserisci l’avanzamento.' };
     const progress = Number(payload.progress);
     if (!Number.isFinite(progress) || progress < 0 || progress > 100) {
       return { ok: false, status: 'needs_input', message: 'L’avanzamento deve essere compreso tra 0 e 100.' };
     }
-    const { error } = await supabase.from('sites').update({ progress: Math.round(progress) }).eq('id', siteId);
+    const { data, error } = await supabase.from('sites').update({ progress: Math.round(progress) }).eq('id', siteId).is('deleted_at', null).select('id');
     if (error) throw error;
+    if (!data?.length) return { ok: false, status: 'failed', message: 'Spazio non modificabile o non disponibile.' };
     return { ok: true, status: 'completed', message: `Avanzamento aggiornato al ${Math.round(progress)}%.` };
   }
 

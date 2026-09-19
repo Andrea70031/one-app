@@ -1,5 +1,6 @@
 import { File } from 'expo-file-system';
 import { supabase } from './supabase';
+import { requestAIConsent } from './aiConsent';
 import type { OneAIAction } from './aiActionAdapter';
 
 export type OneAIResult = {
@@ -82,10 +83,14 @@ async function attachmentToDataUrl(item: OneNativeAttachment, maxBytes: number) 
 async function transcribeAudio(item: OneNativeAttachment) {
   const audio = await attachmentToDataUrl(item, MAX_AUDIO_BYTES);
   const { data, error } = await supabase.functions.invoke('one-transcribe', {
-    body: { audio },
+    body: { audio, ai_consent: true },
+    timeout: 70000,
   });
 
-  if (error) throw new Error(error.message || 'ONE non riesce a trascrivere l’audio.');
+  if (error) {
+    const detail = await error.context?.json?.().catch(() => null);
+    throw new Error(detail?.detail || detail?.error || 'Servizio temporaneamente non disponibile. Riprova tra poco.');
+  }
   if (data?.error) throw new Error(data.error);
   const text = String(data?.text || '').trim();
   if (!text) throw new Error('Non sono riuscito a capire la registrazione. Riprova parlando più vicino al microfono.');
@@ -93,6 +98,7 @@ async function transcribeAudio(item: OneNativeAttachment) {
 }
 
 export async function askOneNative(input: AskOneNativeInput) {
+  if (!(await requestAIConsent())) return null;
   const attachments = input.attachments ?? [];
   const images = attachments.filter((item) => item.kind === 'camera' || item.kind === 'photo');
   const documents = attachments.filter((item) => item.kind === 'document');
@@ -108,12 +114,25 @@ export async function askOneNative(input: AskOneNativeInput) {
   }
 
   const document = documents[0];
-  const documentData = document ? await attachmentToDataUrl(document, MAX_DOCUMENT_BYTES) : null;
+  let documentData: string | null = null;
+  let documentText = '';
+  if (document) {
+    const mime = document.mimeType || fallbackMime(document);
+    if (mime === 'application/pdf' || document.name.toLowerCase().endsWith('.pdf')) {
+      documentData = await attachmentToDataUrl(document, MAX_DOCUMENT_BYTES);
+    } else if (['text/plain', 'text/csv', 'text/markdown'].includes(mime) || /\.(txt|csv|md)$/i.test(document.name)) {
+      if (!document.uri) throw new Error('Documento non leggibile.');
+      const local = new File(document.uri);
+      if (local.size > 100000) throw new Error('Il documento di testo supera 100 KB. Riducilo prima di inviarlo.');
+      documentText = await local.text();
+    } else throw new Error('Formato non supportato. Scegli un PDF o un file TXT, CSV o Markdown.');
+  }
   const audio = audios[0];
   const transcript = audio ? await transcribeAudio(audio) : '';
 
   const typedText = String(input.text || '').trim();
   const textParts = [typedText];
+  if (documentText) textParts.push(`Documento ${document?.name}:\n${documentText}`);
   if (transcript) textParts.push(`Trascrizione della richiesta vocale:\n${transcript}`);
   const text = textParts.filter(Boolean).join('\n\n').trim();
 
@@ -122,16 +141,22 @@ export async function askOneNative(input: AskOneNativeInput) {
   const { data, error } = await supabase.functions.invoke('one-ai', {
     body: {
       text,
+      ai_consent: true,
       site_id: input.siteId ?? null,
       mode: 'assistant',
       supported_actions: ['create_site'],
+      executable_actions: ['reminder', 'calendar', 'email', 'maps', 'create_site', 'create_issue', 'create_activity', 'create_daily_report', 'update_site_progress'],
       images: imageData,
       file: documentData,
       filename: document?.name ?? undefined,
     },
+    timeout: 70000,
   });
 
-  if (error) throw new Error(error.message || 'ONE AI non è raggiungibile.');
+  if (error) {
+    const detail = await error.context?.json?.().catch(() => null);
+    throw new Error(detail?.detail || detail?.error || 'Servizio temporaneamente non disponibile. Riprova tra poco.');
+  }
   if (data?.error) throw new Error(data.detail || data.error);
   const result = data?.result as OneAIResult | undefined;
   if (!result?.summary) throw new Error('ONE non ha restituito una risposta valida.');

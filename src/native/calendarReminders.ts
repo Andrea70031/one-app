@@ -23,12 +23,13 @@ export async function createNativeReminder(payload: ReminderPayload): Promise<On
   }
 
   const calendars = await Calendar.getCalendars(Calendar.EntityTypes.REMINDER);
-  const target = calendars.find(item => item.allowsModifications) ?? calendars[0];
+  const target = calendars.find(item => item.allowsModifications);
   if (!target) {
     return { ok: false, kind: 'reminder', status: 'failed', message: 'Nessun elenco Promemoria disponibile sul dispositivo.' };
   }
 
   const dueDate = validDate(payload.dueAt);
+  if (payload.dueAt && !dueDate) return { ok: false, kind: 'reminder', status: 'failed', message: 'Scadenza non valida. Usa una data ISO con fuso orario.' };
   const reminder = await target.createReminder({
     title,
     notes: payload.note?.trim() || undefined,

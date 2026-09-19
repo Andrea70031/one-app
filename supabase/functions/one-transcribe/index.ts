@@ -46,13 +46,18 @@ export default {
     const apiKey = Deno.env.get("OPENAI_API_KEY");
     if (!apiKey) return response({ error: "Motore voce non configurato" }, 503);
 
-    const { blob, mime } = dataUrlToBlob(audio);
+    if (!/^data:audio\/(mp4|mpeg|m4a|ogg|wav|x-wav|webm)(?:;codecs=[^;]+)?;base64,[A-Za-z0-9+/=]+$/.test(audio)) return response({ error: 'Formato audio non valido' }, 400);
+    let decoded;
+    try { decoded = dataUrlToBlob(audio); }
+    catch { return response({ error: 'Audio non valido' }, 400); }
+    const { blob, mime } = decoded;
     const extension = mime.includes("mp4") ? "m4a" : mime.includes("ogg") ? "ogg" : mime.includes("wav") ? "wav" : "webm";
     const form = new FormData();
     form.append("file", blob, `one-audio.${extension}`);
     form.append("model", "gpt-4o-mini-transcribe");
     form.append("language", "it");
 
+    try {
     const openaiResponse = await fetch("https://api.openai.com/v1/audio/transcriptions", {
       method: "POST",
       signal: AbortSignal.timeout(60_000),
@@ -62,5 +67,6 @@ export default {
     const payload = await openaiResponse.json().catch(() => ({}));
     if (!openaiResponse.ok) return response({ error: "Trascrizione non riuscita" }, 502);
     return response({ ok: true, text: payload.text || "" });
+    } catch { return response({ error: "Trascrizione temporaneamente non disponibile. Riprova." }, 503); }
   }),
 };

@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Linking,
+  Modal,
+  Share,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -11,12 +13,12 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { colors } from '../theme/colors';
 import { useOneAuth } from './auth';
-import type { NativeDashboard, OneReminder } from './oneData';
+import type { NativeDashboard, OneReminder, OneMemory } from './oneData';
 import { setReminderCompleted } from './oneData';
 import {
   loadNotificationPreferences,
@@ -171,6 +173,7 @@ export function NativeSpacesScreen(props: SharedProps) {
 }
 
 export function NativeRecallScreen(props: SharedProps & { onOpenReminders: () => void }) {
+  const [selected, setSelected] = useState<OneMemory | null>(null);
   const [query, setQuery] = useState('');
   const memories = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -198,7 +201,7 @@ export function NativeRecallScreen(props: SharedProps & { onOpenReminders: () =>
 
       <View style={styles.listBlock}>
         {memories.length ? memories.map((memory) => (
-          <View key={memory.id} style={styles.memoryRow}>
+          <Pressable key={memory.id} style={styles.memoryRow} onPress={() => setSelected(memory)} accessibilityRole="button" accessibilityLabel={`Apri ${memory.title}`}>
             <LinearGradient colors={[colors.cyan, colors.blue, colors.violet]} style={styles.memoryDotOuter}>
               <View style={styles.memoryDotInner} />
             </LinearGradient>
@@ -210,9 +213,15 @@ export function NativeRecallScreen(props: SharedProps & { onOpenReminders: () =>
                 <Text style={styles.metaText}>{formatDate(memory.created_at)}</Text>
               </View>
             </View>
-          </View>
+          </Pressable>
         )) : <EmptyState icon="sparkles-outline" title="Recall vuoto" copy={query ? 'Nessun ricordo corrisponde alla ricerca.' : 'Quando salverai qualcosa in Recall lo troverai qui.'} />}
       </View>
+      <Modal visible={Boolean(selected)} animationType="slide" onRequestClose={() => setSelected(null)}>
+        <View style={{ flex: 1, backgroundColor: colors.background, paddingTop: 60, paddingHorizontal: 24 }}>
+          <Pressable onPress={() => setSelected(null)} accessibilityRole="button"><Text style={{ color: colors.cyan, paddingVertical: 16 }}>Chiudi</Text></Pressable>
+          <ScrollView><Text style={styles.title}>{selected?.title}</Text><Text selectable style={[styles.rowCopy, { fontSize: 16, lineHeight: 25, paddingBottom: 50 }]}>{selected?.payload?.answer || selected?.payload?.summary || selected?.summary}</Text></ScrollView>
+        </View>
+      </Modal>
     </ScreenFrame>
   );
 }
@@ -296,6 +305,8 @@ export function NativeAccountScreen(props: AccountProps) {
       if (enabled && !next.enabled) {
         Alert.alert('Notifiche non abilitate', 'Puoi abilitarle in Impostazioni iOS → ONE → Notifiche.');
       }
+    } catch {
+      Alert.alert('Notifiche', 'Non riesco a salvare la preferenza. Riprova.');
     } finally {
       setNotificationBusy(false);
     }
@@ -307,9 +318,11 @@ export function NativeAccountScreen(props: AccountProps) {
     try {
       const next = await setBriefingEnabled(enabled, props.dashboard.reminders);
       setNotificationPrefs(next);
-      if (enabled && !next.briefing) {
+      if (enabled && !(next.enabled && next.briefing)) {
         Alert.alert('Briefing non attivato', 'Abilita prima le notifiche di ONE nelle impostazioni del dispositivo.');
       }
+    } catch {
+      Alert.alert('Notifiche', 'Non riesco a salvare la preferenza. Riprova.');
     } finally {
       setNotificationBusy(false);
     }

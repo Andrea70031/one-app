@@ -154,9 +154,9 @@ function aiError(code: string, detail: string, status = 502) {
 }
 
 function providerError(status: number, code: string) {
-  if (code === "insufficient_quota") return aiError("insufficient_quota", "Credito API OpenAI non disponibile. Controlla il saldo dell'organizzazione collegata alla chiave.", 503);
-  if (status === 401) return aiError("invalid_api_key", "La chiave OpenAI configurata non è valida. Aggiorna OPENAI_API_KEY nelle impostazioni del backend.", 503);
-  if (status === 403) return aiError("permission_denied", "La chiave OpenAI non è autorizzata a usare questo modello o la Responses API.", 503);
+  if (code === "insufficient_quota") return aiError("insufficient_quota", "Il servizio AI è temporaneamente non disponibile. Riprova più tardi o contatta il supporto ONE.", 503);
+  if (status === 401) return aiError("invalid_api_key", "Il servizio AI è temporaneamente non disponibile. Contatta il supporto ONE.", 503);
+  if (status === 403) return aiError("permission_denied", "Il servizio AI è temporaneamente non disponibile. Contatta il supporto ONE.", 503);
   if (code === "model_not_found") return aiError("model_not_found", "Il modello AI configurato non è disponibile per questo progetto OpenAI.", 503);
   if (status === 429) return aiError("rate_limit", "Troppe richieste al motore AI. Attendi qualche secondo e riprova.", 429);
   return aiError("provider_error", "OpenAI non ha completato la richiesta. Riprova tra poco.");
@@ -178,9 +178,11 @@ export default {
 
     const body = await req.json().catch(() => ({}));
     const message = String(body.text || body.message || "").trim();
+    const requestedKinds = Array.isArray(body.executable_actions) ? body.executable_actions.filter((kind: unknown) => typeof kind === "string" && actionKinds.includes(kind)) : null;
     const canCreateSite = Array.isArray(body.supported_actions) && body.supported_actions.includes("create_site");
     const schema = structuredClone(resultSchema);
     if (!canCreateSite) schema.properties.actions.items.properties.kind.enum = actionKinds.filter(kind => kind !== "create_site");
+    if (requestedKinds?.length) schema.properties.actions.items.properties.kind.enum = schema.properties.actions.items.properties.kind.enum.filter(kind => requestedKinds.includes(kind));
     const mode = body.mode === "walkthrough" ? "walkthrough" : "assistant";
     const siteId = body.site_id ? String(body.site_id) : null;
     const image = typeof body.image === "string" ? body.image : null;
@@ -192,6 +194,7 @@ export default {
     const userId = ctx.userClaims?.id;
 
     if (!userId) return response({ error: "Utente non autenticato" }, 401);
+    if (message.length > 120000) return response({ error: "Richiesta troppo lunga" }, 413);
     if (!message && !image && !file && !images.length) return response({ error: "Richiesta vuota" }, 400);
     const imageBytes = images.reduce((total: number, value: string) => total + value.length, image?.length || 0);
     if (imageBytes > 28_000_000 || (file?.length || 0) > 14_000_000) {
@@ -210,11 +213,11 @@ export default {
 
     if (siteId) {
       const [siteResult, issuesResult, activitiesResult, reportsResult, documentsResult] = await Promise.all([
-        ctx.supabase.from("sites").select("id,job_number,name,client,address,status,progress,notes").eq("id", siteId).single(),
-        ctx.supabase.from("issues").select("id,title,details,priority,status,assigned_to,due_at,created_at").eq("site_id", siteId).order("created_at", { ascending: false }).limit(80),
-        ctx.supabase.from("activities").select("id,title,notes,created_at").eq("site_id", siteId).order("created_at", { ascending: false }).limit(80),
-        ctx.supabase.from("daily_reports").select("report_date,summary,workers,hours,works,blockers").eq("site_id", siteId).order("report_date", { ascending: false }).limit(20),
-        ctx.supabase.from("documents").select("file_name,mime_type,category,created_at").eq("site_id", siteId).order("created_at", { ascending: false }).limit(50),
+        ctx.supabase.from("sites").select("id,job_number,name,client,address,status,progress,notes").eq("id", siteId).is("deleted_at", null).single(),
+        ctx.supabase.from("issues").select("id,title,details,priority,status,assigned_to,due_at,created_at").is("deleted_at", null).eq("site_id", siteId).order("created_at", { ascending: false }).limit(80),
+        ctx.supabase.from("activities").select("id,title,notes,created_at").is("deleted_at", null).eq("site_id", siteId).order("created_at", { ascending: false }).limit(80),
+        ctx.supabase.from("daily_reports").select("report_date,summary,workers,hours,works,blockers").is("deleted_at", null).eq("site_id", siteId).order("report_date", { ascending: false }).limit(20),
+        ctx.supabase.from("documents").select("file_name,mime_type,category,created_at").is("deleted_at", null).eq("site_id", siteId).order("created_at", { ascending: false }).limit(50),
       ]);
       if (siteResult.error || !siteResult.data) return response({ error: "Spazio non accessibile" }, 403);
       site = siteResult.data;
@@ -224,11 +227,13 @@ export default {
       documents = documentsResult.data || [];
     } else {
       const [sitesResult, issuesResult] = await Promise.all([
-        ctx.supabase.from("sites").select("id,job_number,name,client,status,progress").order("updated_at", { ascending: false }).limit(60),
-        ctx.supabase.from("issues").select("id,site_id,title,priority,status,due_at").order("updated_at", { ascending: false }).limit(120),
+        ctx.supabase.from("sites").select("id,job_number,name,client,status,progress").is("deleted_at", null).order("updated_at", { ascending: false }).limit(60),
+        ctx.supabase.from("issues").select("id,site_id,title,priority,status,due_at").is("deleted_at", null).order("updated_at", { ascending: false }).limit(120),
       ]);
+      if (sitesResult.error || issuesResult.error) return response({ error: 'Contesto ONE non disponibile. Riprova.' }, 503);
+      const activeSiteIds = new Set((sitesResult.data || []).map((item: any) => item.id));
       site = { portfolio: sitesResult.data || [] };
-      issues = issuesResult.data || [];
+      issues = (issuesResult.data || []).filter((item: any) => activeSiteIds.has(item.site_id));
     }
 
     await ctx.supabase.from("ai_messages").insert({
@@ -249,7 +254,7 @@ export default {
 
     let result: any = null;
     const openaiKey = Deno.env.get("OPENAI_API_KEY");
-    if (!openaiKey) return aiError("missing_api_key", "Il motore AI non è configurato: manca OPENAI_API_KEY nel backend.", 503);
+    if (!openaiKey) return aiError("missing_api_key", "Il servizio AI non è disponibile. Contatta il supporto ONE.", 503);
     try {
       const openaiResponse = await fetch("https://api.openai.com/v1/responses", {
         method: "POST",
@@ -257,6 +262,7 @@ export default {
         headers: { "Authorization": `Bearer ${openaiKey}`, "Content-Type": "application/json" },
         body: JSON.stringify({
           model: "gpt-5.6-luna",
+          store: false,
           instructions: `Sei ONE, assistente generale personale e professionale. I cantieri sono soltanto uno dei moduli disponibili: non trasformare ogni richiesta in un'operazione di cantiere. Puoi creare direttamente contenuti utili come checklist, liste, lettere, email in bozza, piani di lavoro, tabelle, preventivi in bozza e codice. Distingui sempre la generazione di un contenuto dall'esecuzione di un'operazione su dati o servizi. Se viene richiesto un file testuale, puoi proporre download con content completo, filename ed estensione coerenti, e mime text/plain, text/markdown o text/csv; non dichiarare di aver creato PDF, Excel o allegati binari non disponibili. Per servizi esterni prepara bozze o usa esclusivamente le azioni collegate: non inventare integrazioni. Usa i cantieri nel contesto solo quando sono pertinenti alla richiesta. Rispondi in italiano, con tono concreto. Soddisfa direttamente la richiesta nel campo summary: scrivi la checklist completa, la bozza o il piano richiesto con punti numerati su righe separate. Non limitarti a dire che è pronto e non nascondere il contenuto soltanto in extracted o nelle azioni. memory_title e memory_summary sono invece brevi etichette per Recall; il salvataggio in Recall è facoltativo e distinto dalla risposta. Per checklist e modelli generali puoi usare conoscenze generali, specificando cosa va verificato sul posto. Per affermazioni su uno specifico cantiere usa solo i dati e gli allegati disponibili: non inventare persone, decisioni, scadenze o valori. Se l'utente vuole registrare qualcosa in un cantiere, proponi create_issue, create_activity, create_daily_report o update_site_progress. Usa site_id soltanto quando corrisponde senza ambiguità a un cantiere presente nel contesto; altrimenti lascialo null e valorizza site_job_number solo se esplicitamente indicato. ${canCreateSite ? "Se l'utente chiede di creare un NUOVO cantiere, proponi create_site con site_job_number per la commessa, site_name per il nome, client, address e notes soltanto se forniti; site_id deve essere null. Anche se il portfolio è vuoto puoi creare il primo cantiere. I campi mancanti vengono completati nella schermata di revisione. Non rispondere che creare cantieri è impossibile." : "Questa versione del client non supporta create_site: se l'utente chiede un nuovo cantiere, spiega che deve aggiornare ONE per usare la creazione guidata."} Prepara sempre l'operazione per la revisione dell'utente e non dichiarare mai che sia già stata eseguita. Nei cantieri evidenzia prima sicurezza, blocchi, responsabilità e scadenze. Se mode è walkthrough, compila walkthrough come bozza completa del sopralluogo: separa lavorazioni svolte, blocchi, attività e criticità; non trasformare la stessa osservazione sia in attività sia in criticità; usa suggested_progress solo se gli elementi osservati giustificano concretamente la variazione, altrimenti null; usa null per persone, ore e scadenze non dichiarate; lascia actions vuoto. Se mode non è walkthrough, imposta walkthrough a null. Mode corrente: ${mode}. Restituisci al massimo quattro azioni utili e realmente eseguibili. Quando non ci sono azioni, restituisci actions vuoto: non proporre pulsanti none o non disponibili.`,
           input: [{ role: "user", content }],
           max_output_tokens: mode === "walkthrough" ? 6000 : 4000,
