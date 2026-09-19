@@ -2,6 +2,8 @@
 
 19 settembre 2026 · obiettivo: invio entro lunedì 21 settembre 2026
 
+**Aggiornamento successivo:** cancellazione Storage completata e distribuita; AI verificata con testo, immagine e PDF reali sintetici; 40 test superati; pipeline Codemagic aggiunta. Per lo stato attuale vedere [RELEASE_COMPLETION.md](RELEASE_COMPLETION.md). I punti sottostanti descrivono anche lo stato precedente a questo aggiornamento.
+
 **Esito: non ancora pronta per l’invio.** Il controllo del codice, del backend e della configurazione ha individuato e corretto difetti reali. Mancano ancora la build firmata, la prova completa su iPhone e alcuni requisiti di pubblicazione. L’esportazione JavaScript riuscita non dimostra l’assenza di crash nativi e non è una build TestFlight.
 
 Repository verificato: `Andrea70031/one-app`, ramo `main`, commit iniziale `0c6b9ee9352906c0e8f89ea63abfd1c2f239db55`. Correzioni sul ramo `codex/one-app-store-audit-20260919`. Sonic MD e Drainmap non sono stati modificati.

@@ -1,0 +1,54 @@
+# Connect the ONE Apple API integration and matching signing profile before running.
+workflows:
+  one-ios-release:
+    name: ONE iOS — TestFlight
+    instance_type: mac_mini_m2
+    max_build_duration: 90
+    integrations:
+      app_store_connect: ONE App Store Connect
+    environment:
+      node: 24
+      xcode: 26.6
+      cocoapods: default
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.one.assistant
+      groups:
+        - one_release
+      vars:
+        EXPO_NO_TELEMETRY: '1'
+        CI: '1'
+    scripts:
+      - name: Verify release inputs
+        script: |
+          set -eu
+          : "${APP_STORE_APPLE_ID:?Set the Apple ID of ONE in the one_release group}"
+          : "${ONE_BUILD_NUMBER:?Set a unique build number greater than the last Apple upload}"
+          case "$ONE_BUILD_NUMBER" in ''|*[!0-9]*) exit 1;; esac
+          xcodebuild -version
+          node -e "const fs=require('fs');const p=require('./app.json');p.expo.ios.buildNumber=process.env.ONE_BUILD_NUMBER;fs.writeFileSync('app.json',JSON.stringify(p,null,2)+'\n')"
+      - name: Install and verify
+        script: |
+          set -eu
+          npm ci
+          npm run check
+          npm test
+      - name: Generate native project
+        script: |
+          set -eu
+          npx expo prebuild --platform ios --no-install
+          cd ios
+          pod install
+      - name: Apply signing profiles
+        script: xcode-project use-profiles
+      - name: Archive and export
+        script: |
+          xcode-project build-ipa --workspace ios/ONE.xcworkspace --scheme ONE
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        submit_to_app_store: false
